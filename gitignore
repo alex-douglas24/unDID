@@ -1,0 +1,17 @@
+# Data files (too large for GitHub)
+data/raw/*.XPT
+data/raw/*.xpt
+data/clean/*.rds
+data/clean/*.RDS
+
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# R output
+*.Rout
