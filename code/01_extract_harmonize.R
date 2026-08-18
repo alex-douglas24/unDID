@@ -1,9 +1,9 @@
 # =============================================================================
-# 01_extract_harmonize.R — Extract and harmonize BRFSS data
+# 01_extract_harmonize.R: Extract and harmonize BRFSS data
 #
-# For each survey year: reads the raw LLCP .XPT file, filters to the 6 target
-# states, selects and renames variables to standardized names (using the
-# year specific names from 00_config.R), and saves a clean .rds file.
+# For each survey year: reads the LLCP .XPT file, filters to the 6 target states
+# selects and renames variables to standardized names (using the year specific 
+# names from 00_config.R), and saves a clean .rds file.
 #
 # Input:  data/raw/LLCP{year}.XPT (one per year)
 # Output: data/clean/brfss_clean_{year}.rds (one per year)
@@ -11,13 +11,12 @@
 # Notes:
 #   - Only the main LLCP (combined landline + cellphone) files are needed.
 #     Our 6 target states always included the marijuana module on all
-#     questionnaire versions, meaning version-specific files (V1/V2/V3) are
-#     not needed
+#     questionnaire versions 
 #   - Variables that do not exist in a given year (e.g., BIRTHSEX before
 #     2019) are skipped during selection. bind_rows() in 02_clean_append.R
 #     fills those columns with NA.
-#   - Not all 6 states fielded the marijuana module every year. This is
-#     expected and documented in the console output below.
+#   - Not all 6 states fielded the marijuana module every year. (explain why this is fine?)
+# add something about how to set up the files? 
 # =============================================================================
 
 cat("============================================================\n")

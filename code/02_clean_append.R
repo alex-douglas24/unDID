@@ -3,19 +3,18 @@
 #
 # Loads the yearly .rds files from 01_extract_harmonize.R, stacks them,
 # filters to respondents with cannabis module data, cleans non-response
-# codes, creates derived variables, and saves the analysis dataset.
+# codes, creates variables, and saves the analysis dataset.
 #
 # Input:  data/clean/brfss_clean_{year}.rds (one per year)
 # Output: data/clean/brfss_analysis_2016_2022.rds
 #
-# Cleaning decisions documented inline:
+# Cleaning decisions documented:
 #   - BRFSS non-response codes (77/88/99 and 7/9) are set to NA.
 #   - marijuana_days 88 ("none") is recoded to 0, not NA.
 #   - PHYSHLTH and MENTHLTH 88 ("none") recoded to 0.
-#   - Education (EDUCA) is recoded from 6 categories to 3 for
-#     harmonization with the Canadian CCHS.
-#   - Income is kept as raw categories; harmonization is deferred
-#     (see TODO in 00_config.R).
+#   - Education (EDUCA) is recoded from 6 categories to 4 for
+#     harmonization with the CCHS.
+#   - Income is recoded into 8 categories instead of 11 categories. 
 #
 # Requires: 00_config.R sourced first
 # =============================================================================
@@ -44,9 +43,8 @@ gc()
 
 # --- Filter to cannabis module respondents ------------------------------------
 # Respondents with marijuana_days == NA were never asked the question (their
-# state did not field the marijuana module that year). This is not individual
-# non-response — it is module-level missingness.
-# 88 = "none" is a valid response meaning 0 days of use.
+# state did not ask the marijuana module that year). 
+# 88 = "none" is recoded to mean 0 days of use.
 
 brfss <- brfss %>%
   filter(!is.na(marijuana_days) | marijuana_days == 88)
@@ -55,9 +53,9 @@ cat("After filtering to cannabis module respondents:", nrow(brfss), "obs\n\n")
 
 
 # --- Clean non-response codes ------------------------------------------------
-# BRFSS coding conventions:
+# BRFSS coding:
 #   77 or 7   = Don't know / Not sure
-#   88        = None (valid for days-based questions; recoded to 0)
+#   88        = None (recoded to 0)
 #   99 or 9   = Refused
 #   BLANK/NA  = Not asked or missing
 
@@ -110,27 +108,35 @@ brfss <- brfss %>%
     # 9 = refused -> NA
     education_raw = ifelse(education_raw == 9, NA, education_raw),
     
-    # ---- EDUCATION (recoded to 3 categories for CCHS harmonization) ----
-    # This recoding collapses the raw EDUCA variable into categories that
-    # align with the Canadian CCHS education measure:
+    # ---- EDUCATION (recoded to 4 categories for CCHS harmonization) ----
+    # Collapses raw EDUCA to match the 4 CCHS education categories:
     #   1 = Less than secondary (EDUCA 1-3: never attended, elementary, some HS)
-    #   2 = Secondary (EDUCA 4: HS graduate or GED)
-    #   3 = Some or completed post-secondary (EDUCA 5-6: some college, college grad)
-    education_3cat = case_when(
+    #   2 = Secondary graduate (EDUCA 4: HS graduate or GED)
+    #   3 = Some post-secondary (EDUCA 5: college 1-3 years)
+    #   4 = Post-secondary/university diploma (EDUCA 6: college 4+ years)
+    education_harmonized = case_when(
       education_raw %in% c(1, 2, 3) ~ 1,
       education_raw == 4             ~ 2,
-      education_raw %in% c(5, 6)     ~ 3,
+      education_raw == 5             ~ 3,
+      education_raw == 6             ~ 4,
       TRUE                           ~ NA_real_
     ),
     
-    # ---- EDUCATION (BRFSS computed 4-level, kept for reference) ----
+    # ---- EDUCATION (BRFSS computed 4-level, maybe delete? ----
     # 9 = DK/refused -> NA
     education_4cat = ifelse(education_4cat == 9, NA, education_4cat),
     
     # ---- INCOME ----
     # 77 = DK, 99 = refused -> NA
-    # Raw categories preserved; harmonization deferred (see TODO in 00_config.R)
+    # Raw categories preserved; harmonization deferred 
     income_raw = ifelse(income_raw %in% c(77, 99), NA, income_raw),
+    
+    # ---- INCOME ----
+    # 77 = DK, 99 = refused -> NA
+    # Categories 9-11 only exist in INCOME3 (2021-22) and represent higher
+    # brackets above $100k. These are recoded to NA so that categories 1-8
+    # are consistent across all years.
+    income_raw = ifelse(income_raw %in% c(9, 10, 11, 77, 99), NA, income_raw),
     
     # ---- MARITAL STATUS ----
     # 9 = refused -> NA
