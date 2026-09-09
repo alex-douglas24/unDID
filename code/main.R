@@ -17,18 +17,26 @@
 # Everything else uses paths relative to this.
 
 #root_dir <- getwd()
-root_dir <- "/Users/alexandradouglas/Documents/GitHub/workingDiD"
+root_dir <- "/Users/alexandradouglas/Desktop/workingDiD"
 
 
 # --- Source component scripts in order ----------------------------------------
 # 00: Shared configuration (paths, target states, variable mappings)
 source(file.path(root_dir, "code", "00_config.R"), echo = TRUE)
 
+clean_dir <- "/Users/alexandradouglas/Desktop/RA/BRFSS_CLEAN"   # TEMP - revert tonight
+
 # 01: Extract and harmonize (read XPT, filter states, rename variables)
-source(file.path(root_dir, "code", "01_extract_harmonize.R"), echo = TRUE)
+# source(file.path(root_dir, "code", "01_extract_harmonize.R"), echo = TRUE)
 
 # 02: Clean and append (set non-response to NA, create derived vars, stack years)
 source(file.path(root_dir, "code", "02_clean_append.R"), echo = TRUE)
+
+# 03: Missingness and coverage diagnostics
+source(file.path(root_dir, "code", "03_missingness.R"), echo = TRUE)
+
+# 04: Harmonize covariates to agreed CCHS coding and prep undidR input
+source(file.path(root_dir, "code", "04_undid_prep.R"), echo = TRUE)
 
 # --- Session info for reproducibility ----------------------------------------
 cat("\n============================================================\n")
@@ -39,32 +47,3 @@ cat("R version:", R.version.string, "\n")
 cat("Platform:", R.version$platform, "\n\n")
 sessionInfo()
 cat("\n\nPipeline complete.\n")
-
-brfss <- readRDS("~/Documents/GitHub/workingDiD/data/clean/brfss_analysis_2016_2022.rds")
-View(brfss)
-
-# parallel trends is below (probs put this in a different script?)
-
-setwd("~/Documents/GitHub/workingDiD")
-
-install.packages("ggplot2")
-library(ggplot2)
-library(ggplot2)
-
-# --- Setup ---
-treatment_states <- c(33, 27, 16)
-control_states   <- c(47, 38, 56)
-
-brfss <- brfss %>%
-  mutate(group = case_when(
-    state %in% treatment_states ~ "Treatment (NH, MN, ID)",
-    state %in% control_states   ~ "Control (TN, ND, WY)"
-  ))
-
-group_colors <- c("Treatment (NH, MN, ID)" = "#2c7bb6",
-                  "Control (TN, ND, WY)" = "#d7191c")
-
-theme_trends <- theme_minimal(base_size = 13) +
-  theme(legend.position = "bottom",
-        plot.title = element_text(face = "bold"))
-

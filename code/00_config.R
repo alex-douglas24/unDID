@@ -11,7 +11,7 @@ library(haven)
 library(dplyr)
 library(tidyr)
 library(purrr)
-#library(undidR)??
+library(undidR)
 
 
 # --- Directories --------------------------------------------------------------
@@ -137,9 +137,6 @@ get_year_config <- function(yr) {
     # ---- INCOME 
     # INCOME2 (2016-20): 8 categories, top = "$75,000 or more
     # INCOME3 (2021-22): 11 categories, finer top-end brackets
-    # TODO: Harmonize before regression. Options:
-    #   (a) Collapse INCOME3 categories 7-11 into "$75k+" to match INCOME2
-    #   (b) Recode both into 5 quintiles to match Canadian CCHS
     setNames("income_raw",       income_var),
     
     # ---- EDUCATION 

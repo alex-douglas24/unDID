@@ -1,0 +1,8 @@
+silo_name,treatment_time,time,mean_outcome,mean_outcome_residualized,covariates,date_format,freq,n
+US,control,2016,0.043333467,0.003809692,female;minority;ageg6;educ;hh_inc;health5,yyyy,1 year,24923
+US,control,2017,0.05263348,0.004171893,female;minority;ageg6;educ;hh_inc;health5,yyyy,1 year,27682
+US,control,2018,0.067770851,0.004897918,female;minority;ageg6;educ;hh_inc;health5,yyyy,1 year,32241
+US,control,2019,0.080313612,0.005188739,female;minority;ageg6;educ;hh_inc;health5,yyyy,1 year,30356
+US,control,2020,0.082116544,0.005319161,female;minority;ageg6;educ;hh_inc;health5,yyyy,1 year,29860
+US,control,2021,0.078131278,0.004417033,female;minority;ageg6;educ;hh_inc;health5,yyyy,1 year,27377
+US,control,2022,0.075034819,0.004568614,female;minority;ageg6;educ;hh_inc;health5,yyyy,1 year,5744

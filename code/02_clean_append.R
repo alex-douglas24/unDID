@@ -91,7 +91,7 @@ brfss <- brfss %>%
     ),
     
     # ---- SEX ----
-    # Core coding consistent across years: 1 = Male, 2 = Female
+    # Coding consistent across years: 1 = Male, 2 = Female
     # 7 = DK, 9 = refused -> NA
     sex          = ifelse(sex %in% c(7, 9), NA, sex),
     sex_reported = ifelse(sex_reported %in% c(7, 9), NA, sex_reported),
@@ -126,58 +126,15 @@ brfss <- brfss %>%
     # 9 = DK/refused -> NA
     education_4cat = ifelse(education_4cat == 9, NA, education_4cat),
     
+
     # ---- INCOME ----
     # 77 = DK, 99 = refused -> NA
-    # Raw categories preserved; harmonization deferred 
+    # INCOME2 (2016-20) top category is 8 = $75,000+. INCOME3 (2021-22) adds
+    # categories 9-11 above it, so 8 no longer means the same thing.
+    # Collapsing 9-11 back into 8 restores a consistent top category.
     income_raw = ifelse(income_raw %in% c(77, 99), NA, income_raw),
-    
-    # ---- INCOME ----
-    # 77 = DK, 99 = refused -> NA
-    # Categories 9-11 only exist in INCOME3 (2021-22) and represent higher
-    # brackets above $100k. These are recoded to NA so that categories 1-8
-    # are consistent across all years.
-    income_raw = ifelse(income_raw %in% c(9, 10, 11, 77, 99), NA, income_raw),
-    
-    # ---- MARITAL STATUS ----
-    # 9 = refused -> NA
-    marital = ifelse(marital == 9, NA, marital),
-    
-    # ---- EMPLOYMENT ----
-    # 9 = refused -> NA
-    employment = ifelse(employment == 9, NA, employment),
-    
-    # ---- GENERAL HEALTH ----
-    # 7 = DK, 9 = refused -> NA
-    general_health = ifelse(general_health %in% c(7, 9), NA, general_health),
-    
-    # ---- HEALTH STATUS (binary) ----
-    # 1 = good or better, 2 = fair or poor, 9 = DK/refused -> NA
-    health_status = ifelse(health_status == 9, NA, health_status),
-    
-    # ---- PHYSICAL HEALTH (days not good, past 30) ----
-    # 88 = none (recode to 0), 1-30 = days, 77 = DK, 99 = refused -> NA
-    physical_health = case_when(
-      physical_health == 88                        ~ 0,
-      physical_health >= 1 & physical_health <= 30 ~ physical_health,
-      TRUE                                         ~ NA_real_
-    ),
-    
-    # ---- MENTAL HEALTH DAYS (continuous, past 30) ----
-    # 88 = none (recode to 0), 1-30 = days, 77 = DK, 99 = refused -> NA
-    mental_health_d = case_when(
-      mental_health_d == 88                        ~ 0,
-      mental_health_d >= 1 & mental_health_d <= 30 ~ mental_health_d,
-      TRUE                                         ~ NA_real_
-    ),
-    
-    # ---- MENTAL HEALTH 3-LEVEL (BRFSS computed) ----
-    # 1 = 0 bad days, 2 = 1-13 days, 3 = 14-30 days, 9 = DK/refused -> NA
-    mental_health_3 = ifelse(mental_health_3 == 9, NA, mental_health_3),
-    
-    # ---- BINGE DRINKING (binary) ----
-    # 1 = No, 2 = Yes, 9 = DK/refused -> NA
-    binge_drink = ifelse(binge_drink == 9, NA, binge_drink),
-    
+    income_8cat = ifelse(income_raw %in% c(9, 10, 11), 8, income_raw),
+
     # ---- RACE/ETHNICITY ----
     # _IMPRACE: no missing codes (values are imputed, so no refusals)
     # _MRACE: 77 = DK, 99 = refused -> NA
@@ -187,7 +144,15 @@ brfss <- brfss %>%
     # _RACEGR3: 9 = DK/refused -> NA
     race_5level    = ifelse(race_5level == 9, NA, race_5level),
     # _PRACE: 77 = DK, 88 = no choice given (2022 only), 99 = refused -> NA
-    race_preferred = ifelse(race_preferred %in% c(77, 88, 99), NA, race_preferred)
+    race_preferred = ifelse(race_preferred %in% c(77, 88, 99), NA, race_preferred),
+
+    # ---- GENERAL HEALTH ----
+    # GENHLTH: 1 = excellent, 2 = very good, 3 = good, 4 = fair, 5 = poor,
+    # 7 = DK, 9 = refused -> NA
+    general_health = case_when(
+      general_health %in% c(7, 9) ~ NA_real_,
+      TRUE                        ~ general_health
+    )
   )
 
 
