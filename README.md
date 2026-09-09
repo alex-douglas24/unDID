@@ -110,7 +110,7 @@ Not all 6 states had the marijuana module every year. Missing state years are ex
 
 The pipeline is split into three scripts, each with one job. A master script (`main.R`) runs them in order. The following explains what happens to a single variable cannabis use as it moves through the pipeline.
 
-### Step 1: Config (`code/00_config.R`) — Define the plan
+### Step 1: Configure (`code/00_config.R`) figure out these name s
 
 The config script builds a mapping between variable names and standardized names. It does not load any data, it just creates a reference for the other scripts to use. This is needed because the BRFSS renames variables across years. For example, cannabis use is called `MARIJANA` in 2016–2017 but `MARIJAN1` in 2018–2022. The config script deals with this by:
 
@@ -121,11 +121,11 @@ setNames("marijuana_days", mj_var)
 
 Essentially, this takes the raw name is X year and renames it `marijuana_days`. The config also stores shared settings (target states, file paths, study years) that all scripts need.
 
-### Step 2: Extract and harmonize (`code/01_extract_harmonize.R`) — Get and rename
+### Step 2: Extract and harmonize (`code/01_extract_harmonize.R`) 
 
 This script reads each year's raw `.XPT` file and uses the config's mapping to find and rename columns. For 2016, it finds the column called `MARIJANA`, keeps it, and renames it to `marijuana_days`. For 2019, it finds `MARIJAN1` and renames it to `marijuana_days`.
 
-### Step 3: Clean and append (`code/02_clean_append.R`) — Clean data, stack years
+### Step 3: Clean and append (`code/02_clean_append.R`) 
 
 This script loads all the yearly `.rds` files, stacks them into one dataset, and then recodes some variables for analysis. Using our running example marijuana_days we can see how it is recoded to be cleaned below. 88 is zero days which is recoded as well as 77, 99 which are recoded to missing. This script also creates the derived variables such as binary variables of heavy use or not defined as more than 25+ days of use.
 
