@@ -21,6 +21,14 @@ data/raw/LLCP2017.XPT
 ...
 data/raw/LLCP2022.XPT
 ```
+File sizes 
+2016 79.5mb
+2017 102mb
+2018 69.5mb
+2019 93.4mb
+2020 64.4mb
+2021 77.8mb
+2022 80.7mb
 
 Only the main LLCP files are needed. Version-specific files (V1/V2/V3) are not required for these 6 states, as they always included the marijuana module on all questionnaire versions.
 
