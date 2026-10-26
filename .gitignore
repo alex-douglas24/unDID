@@ -15,3 +15,5 @@ Thumbs.db
 
 # R output
 *.Rout
+data/raw/
+.DS_Store

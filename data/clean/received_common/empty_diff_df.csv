@@ -1,0 +1,3 @@
+silo_name,treat,common_treatment_time,start_time,end_time,weights,diff_estimate,diff_var,diff_estimate_covariates,diff_var_covariates,covariates,date_format,freq,n,n_t,anonymize_size
+CAN,1,2018,2016,2022,diff,NA,NA,NA,NA,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,NA,NA,NA
+USA,0,2018,2016,2022,diff,NA,NA,NA,NA,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,NA,NA,NA

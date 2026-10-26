@@ -24,8 +24,6 @@ root_dir <- "/Users/alexandradouglas/Desktop/workingDiD"
 # 00: Shared configuration (paths, target states, variable mappings)
 source(file.path(root_dir, "code", "00_config.R"), echo = TRUE)
 
-clean_dir <- "/Users/alexandradouglas/Desktop/RA/BRFSS_CLEAN"   # TEMP - revert tonight
-
 # 01: Extract and harmonize (read XPT, filter states, rename variables)
 # source(file.path(root_dir, "code", "01_extract_harmonize.R"), echo = TRUE)
 

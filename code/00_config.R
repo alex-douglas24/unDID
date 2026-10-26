@@ -25,6 +25,26 @@ out_dir   <- file.path(root_dir, "output")
 dir.create(clean_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(out_dir,   showWarnings = FALSE, recursive = TRUE)
 
+# --- Locate a year's XPT file -------------------------------------------------
+# look at reproduce guide for this? Maybe an easier way to do it??  
+# CDC ships some years with a trailing space in the filename ("LLCP2016.XPT ").
+# Renaming by hand would be an undocumented step a replicator wouldn't know to
+# perform, so match on the year and tolerate stray whitespace instead.
+find_xpt <- function(yr, dir = raw_dir) {
+  files <- list.files(dir, pattern = "\\.XPT\\s*$", ignore.case = TRUE)
+  files <- files[!startsWith(files, "._")]
+  hit   <- files[grepl(as.character(yr), files, fixed = TRUE)]
+
+  if (length(hit) == 0) {
+    stop("No .XPT file found for ", yr, " in ", dir)
+  }
+  if (length(hit) > 1) {
+    stop("Multiple .XPT files match ", yr, ": ", paste(hit, collapse = ", "))
+  }
+
+  file.path(dir, hit)
+}
+
 
 # --- Target states (FIPS codes) -----------------------------------------------
 # These 6 US states serve as untreated controls in the unDiD comparing against Canada 

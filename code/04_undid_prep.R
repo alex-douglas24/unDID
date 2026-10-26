@@ -124,6 +124,28 @@ cat("\nDropped", n_before - nrow(brfss), "rows with missing outcome/covariates\n
 cat("Analysis sample:", nrow(brfss), "obs\n\n")
 
 
+# --- Create dummy columns for the categorical covariates ----------------------
+# Each category of ageg6, educ, hh_inc and health5 becomes its own 0/1 column.
+# The lowest category of each is left out as the reference group.
+brfss <- brfss %>%
+  mutate(
+    ageg6   = factor(ageg6),
+    educ    = factor(educ),
+    hh_inc  = factor(hh_inc),
+    health5 = factor(health5)
+  )
+
+X <- model.matrix(~ ageg6 + educ + hh_inc + health5, data = brfss)
+cat_dummies <- X[, -1, drop = FALSE]   # drops the intercept column
+
+brfss <- cbind(brfss, cat_dummies)
+
+# The covariate list is now the 21 dummy names, in the same order as the CSV
+undid_covariates <- c("female", colnames(cat_dummies), "minority")
+
+cat("Covariates now used:\n")
+cat(paste(undid_covariates, collapse = ";"), "\n\n")
+
 # --- Verify every agreed covariate is present and usable ----------------------
 missing_covariates <- setdiff(undid_covariates, names(brfss))
  
@@ -196,7 +218,7 @@ undid_dir <- file.path(clean_dir, "undid", "common")
 dir.create(undid_dir, recursive = TRUE, showWarnings = FALSE)
 
 init <- create_init_csv(
-  silo_names      = c("US", "CAN"),
+  silo_names      = c("USA", "CAN"),
   start_times     = "2016",
   end_times       = "2022",
   treatment_times = c("control", "2018"),
@@ -222,18 +244,57 @@ cat("before running stage two.\n\n")
  
  
 # =============================================================================
-# Stage Two: run once empty_diff_df.csv has been received and checked.
-#
-# stage2 <- undid_stage_two(
-#   empty_diff_filepath = file.path(undid_dir, "empty_diff_df.csv"),
-#   silo_name           = "US",
-#   silo_df             = undid_input,
-#   time_column         = "year",
-#   outcome_column      = "use30",
-#   silo_date_format    = "yyyy",
-#   filepath            = undid_dir
-# )
-#
-# Send back: filled_diff_df_US.csv and trends_data_US.csv
+# Stage Two: fill in the empty_diff_df.csv received from the CCHS silo.
+# The received file lives in data/clean/received_common. The filled file and
+# the trends file are saved in that same folder. Send both back.
 # =============================================================================
- 
+
+cat("============================================================\n")
+cat("STAGE TWO: FILL IN RECEIVED FILE (common adoption)\n")
+cat("============================================================\n\n")
+
+received_dir <- file.path(clean_dir, "received_common")
+
+stage2 <- undid_stage_two(
+  empty_diff_filepath = file.path(received_dir, "empty_diff_df.csv"),
+  silo_name           = "USA",
+  silo_df             = undid_input,
+  time_column         = "year",
+  outcome_column      = "use30",
+  silo_date_format    = "yyyy",
+  filepath            = received_dir
+)
+
+print(stage2$diff_df[, c("silo_name", "treat", "start_time", "end_time",
+                         "diff_estimate", "diff_estimate_covariates", "n")])
+
+cat("\nSend back: filled_diff_df_USA.csv and trends_data_USA.csv\n\n")
+
+# =============================================================================
+# Stage Two (staggered adoption): fill in the staggered empty_diff_df.csv
+# received from the CCHS silo. The received file lives in
+# data/clean/received_stag. The filled file and the trends file are saved in
+# that same folder. Send both back.
+# =============================================================================
+
+cat("============================================================\n")
+cat("STAGE TWO: FILL IN RECEIVED FILE (staggered adoption)\n")
+cat("============================================================\n\n")
+
+received_stag_dir <- file.path(clean_dir, "received_stag")
+
+stage2_stag <- undid_stage_two(
+  empty_diff_filepath = file.path(received_stag_dir, "empty_diff_df.csv"),
+  silo_name           = "USA",
+  silo_df             = undid_input,
+  time_column         = "year",
+  outcome_column      = "use30",
+  silo_date_format    = "yyyy",
+  filepath            = received_stag_dir
+)
+
+print(stage2_stag$diff_df[, c("silo_name", "gvar", "treat", "gt",
+                              "diff_estimate", "diff_estimate_covariates", "n")])
+
+cat("\nSend back: filled_diff_df_USA.csv and trends_data_USA.csv\n\n")
+# =============================================================================
