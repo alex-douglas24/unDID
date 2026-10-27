@@ -1,3 +1,137 @@
+# OLD CODE LIVES BELOW THIS FIRST FILE SO LOOK AT THAT LATER! 
+
+
+
+# =============================================================================
+# 03_missingness.R: Missing data and cannabis module coverage tables for appendix! 
+#   These tables are for the missing data appendix. No later script reads them,
+#   so the undidR results do not depend on this step.
+#
+# WHAT IT DOES
+#   Builds three descriptive tables about the BRFSS data:
+#   1. how much of each variable is missing, by year
+#   2. how many respondents each state has, by year
+#   3. how much of the sample is kept under different sets of covariates
+#
+# OUTPUT
+#   output/missingness_by_year.csv   percent missing per variable, per year
+#   output/module_coverage.csv       number of respondents per state, per year
+#   output/covariate_cost.csv        sample kept under each set of covariates
+#
+# HOW TO RUN
+#   Not run on its own. main.R runs it after 02_clean_append.R, 01_extract_harmonize.R and 00_config.R scripts.
+#
+# BEFORE RUNNING
+#   02_clean_append.R must have run, so that
+#   data/clean/brfss_analysis_2016_2022.rds exists. main.R also runs
+#   00_config.R first, which this script needs.
+# =============================================================================
+
+
+
+
+
+cat("============================================================\n")
+cat("STEP 3: MISSINGNESS\n")
+cat("============================================================\n\n")
+
+# Load the combined dataset made by 02_clean_append.R
+brfss <- readRDS(file.path(clean_dir, "brfss_analysis_2016_2022.rds"))
+
+# --- Table 1: percent missing by variable and year ----------------------------
+# All candidate codings are included, not just the chosen ones, so the
+# selection between alternatives (e.g. age_5yr vs age_imputed) is documented.
+# *possibly revise for appendix: maybe only include the variables used in the undidR analysis?*
+
+miss_vars <- c("marijuana_days_clean", "use30",
+               "age_5yr", "age_6grp", "age_2grp", "age_imputed",
+               "sex", "sex_reported", "birthsex",
+               "education_raw", "education_4cat", "education_3cat",
+               "income_raw", "income_8cat",
+               "general_health", "race_binary_wh",
+               "marital", "employment", "binge_drink")
+miss_vars <- intersect(miss_vars, names(brfss))
+
+missingness_by_year <- brfss %>%
+  group_by(year) %>%
+  summarise(across(all_of(miss_vars), ~ round(100 * mean(is.na(.x)), 1)),
+            .groups = "drop") %>%
+  pivot_longer(-year, names_to = "variable", values_to = "pct_na") %>%
+  pivot_wider(names_from = year, values_from = pct_na)
+
+write.csv(missingness_by_year,
+          file.path(out_dir, "missingness_by_year.csv"), row.names = FALSE)
+
+cat("Percent missing by year:\n")
+print(as.data.frame(missingness_by_year))
+
+
+# --- Table 2: cannabis module coverage ----------------------------------------
+# The cannabis module is optional and states choose annually whether to use it.
+# NA means the state has no respondents with cannabis answers that year, because it didn't 
+# include the module. 
+
+module_coverage <- brfss %>%
+  count(state_name, year) %>%
+  pivot_wider(names_from = year, values_from = n)
+
+write.csv(module_coverage,
+          file.path(out_dir, "module_coverage.csv"), row.names = FALSE)
+
+cat("\n\nObservations by state and year:\n")
+print(as.data.frame(module_coverage))
+
+
+# --- Table 3: sample kept under each covariate set ------------------------
+# Every covariate with missing values removes respondents from the sample. Meaning 
+# a smaller sample gives a larger variance (diff_var) and a larger standard error
+# for the ATT.
+# Below are possible sets of covariates, from none to all 5. The table shows how many 
+#respondents are kept under each set which is useful when choosing variables. The undidR analysis 
+# uses the "age + sex + education + marital + income" set. *revise* maybe only include the variables used in the undidR analysis?
+
+cov_sets <- list(
+  "none"                  = character(0),
+  "age + sex"             = c("age_5yr", "sex_reported"),
+  "+ education"           = c("age_5yr", "sex_reported", "education_4cat"),
+  "+ marital"             = c("age_5yr", "sex_reported", "education_4cat", "marital"),
+  "+ income"              = c("age_5yr", "sex_reported", "education_4cat", "marital", "income_8cat")
+)
+
+# For each covariate set and each year, this reports how many respondents would
+# be kept if we required an answer on the outcome (use30) AND on every covariate
+# in that set. It makes three columns:
+#   n         all respondents in that year
+#   kept      respondents with no missing answer on use30 or on any covariate
+#             in the set
+#   pct_kept  kept as a percent of n
+# Example: for the "age + sex" set, a respondent counts as kept only if use30,
+# age_5yr and sex_reported are all filled in.
+covariate_cost <- purrr::imap_dfr(cov_sets, function(vars, label) {
+  brfss %>%
+    group_by(year) %>%
+    summarise(n = n(),
+              kept = sum(complete.cases(pick(all_of(c(vars, "use30"))))),
+              .groups = "drop") %>%
+    mutate(covariate_set = label,
+           pct_kept = round(100 * kept / n, 1))
+}) %>%
+  select(covariate_set, year, n, kept, pct_kept) %>%
+  pivot_wider(names_from = year, values_from = c(n, kept, pct_kept))
+
+write.csv(covariate_cost,
+          file.path(out_dir, "covariate_cost.csv"), row.names = FALSE)
+
+cat("\n\nSample retained by covariate set:\n")
+print(as.data.frame(
+  covariate_cost %>% select(covariate_set, starts_with("pct_kept"))))
+
+cat("\n\nMissingness complete.\n")
+cat("Tables written to:", out_dir, "\n\n")
+
+
+
+# Appendix Extra 
 # to go at the end of main.R when doing the graphs 
 # =============================================================================
 # Fig 1: Did cannabis use change? (use30, treatment vs control)
@@ -213,3 +347,63 @@ ggsave("output/figC_heavy_use_combined.png", pC,
        width = 10, height = 6, dpi = 300)
 
 cat("Figures A, B, C saved to output/\n")
+
+
+
+
+
+
+
+#test file from before below 
+# LOAD PACKAGES
+library(dplyr)
+library(haven)
+library(tidyr)
+
+
+# LOAD DATASET
+clean_df <- read_dta("brfss_clean.dta")
+
+
+# Keep only observations with nonmissing variables for outcome
+clean_df <- clean_df |>
+  filter(!is.na(days30d))
+
+# Drop observations with missing values for control variables
+clean_df <- clean_df |>
+  drop_na(ageg6, educ, hh_inc, health5, ethnicity)
+
+# Creating factor variables out of categorical variables
+clean_df <- clean_df |>
+  mutate(
+    ageg6 = factor(ageg6),
+    educ = factor(educ),
+    hh_inc = factor(hh_inc),
+    health5 = factor(health5),
+  )
+
+# CREATING DUMMY VARIABLES FOR CATEGORIES
+X <- model.matrix(~ ageg6 + educ + hh_inc + health5,
+                  data = clean_df, na.action = na.pass)
+
+cat_dummies <- X[, -1, drop = FALSE] # this line excludes the intercept column
+
+# Merge new dummy variables with existing data
+clean_df <- cbind(clean_df, cat_dummies)
+
+
+
+
+ # to do reproducibility 
+ # re run the whole pipeline on a different machine, and check that the output is identical without manual intervention 
+ # fix the .XPT files paths as right now it is hard coded to my machine, and the output paths are also hard coded to my machine.
+ #  Move the undid paths into 00_config.R so they aren't redefined per script:  undid_common_dir    <- file.path(clean_dir, "undid", "common")
+ #    undid_staggered_dir <- file.path(clean_dir, "undid", "staggered")
+ # Keep the common and staggered specs in separate folders. Stage three reads every file in a directory beginning filled_diff_df_, so mixing them would  combine two different specifications.
+ # Appendix stuff: final wt is carried but undid stage 2 is unweighted mean no survey weight 
+ # 2018 is partial treated year cuz oct 2018 was the legalization date, so the estimate is attenuated.
+# to do manuscript
+# education variable harmonization question - we can not harmonize it just gotta change the code - wait on decision 
+# fix the race variable cuz maybe it shouldnt be binary?? also ask about manuscript decision re the harmonization part 
+# should it refer to the harmonization names for the undid or for the BRFSS? i assume undid so in that case the other 
+# part goes into the appendix and readmefiles 

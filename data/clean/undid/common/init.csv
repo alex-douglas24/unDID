@@ -1,3 +1,0 @@
-silo_name,start_time,end_time,treatment_time,covariates
-USA,2016,2022,control,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority
-CAN,2016,2022,2018,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority
