@@ -1,10 +1,12 @@
 # =============================================================================
-# 04_undid_prep.R — Harmonize covariate names to the CCHS coding for undidR
+# 04_undid_prep.R: Prepare the BRFSS data for undidR and run stages one and two
 #
-# Loads the BRFSS analysis dataset produced by 02_clean_append.R, applies the
-# cross-silo harmonization recodes (converting BRFSS-coded values to the
-# names/codings agreed with the CCHS silo), selects only the columns needed
-# for the undidR stage-two step, and saves the result.
+# WHAT IT DOES
+#   Loads the BRFSS analysis dataset produced by 02_clean_append.R, recodes the variables 
+#   to the coding agreed with the CCHS silo, removes respondents if they have a missing outcome 
+#   or covariate, turns the categorical covariates into 0/1 dummy columns, and saves the undidR input dataset.
+#  
+#   Then it runs stage one (initialize) and stage two (fill in the empty_diff_df.csv received from the CCHS silo) for both common and staggered adoption. 
 #
 # This script does cross-silo coordination only. BRFSS cleaning
 # (dropping reserved codes, collapsing categories, etc.) already happens
@@ -32,6 +34,28 @@
 # Requires: 00_config.R sourced first, and the analysis dataset built by
 # 02_clean_append.R.
 # =============================================================================
+
+
+# =============================================================================
+# 00_config.R: Shared settings 
+#
+# What this script does:
+#  
+#
+# Before runnning:   
+#  
+#  
+# How to run it:
+#   
+# 
+# Output:
+#  
+# =============================================================================
+
+
+
+
+
 cat("============================================================\n")
 cat("STEP 4: UNDID PREP\n")
 cat("============================================================\n\n")

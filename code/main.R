@@ -1,12 +1,14 @@
 # =============================================================================
-# main.R Master controller script
-# UNDiD BRFSS: US Control States 2016-2022
+# main.R Master controller script for the BRFSS silo (US control states 2016-2022) 
 #
-# What this script does:
-#   This is the main controller script that runs the cleaning, harmonization and UNDiD preperation for the US Silo.
-#   This script should run top to bottom and produce a clean, harmonized dataset. 
-#
-# Before runnning:   
+# WHAT IT DOES
+#   Runs the whole BRFSS pipeline, from the raw BRFSS files to the
+#   undidR files that are sent back to the CCHS (Canadian) silo:
+#   00 settings > 01 extract > 02 clean > 03 missingness > 04 undidR steps.
+#   note that 03_missingness.R is not needed for the undidR analysis, but is for checking 
+#   the missingness in the data and for the appendix tables in the paper.
+# 
+# BEFORE RUNNING
 #   1. Put the raw BRFSS files LLCP2016.XPT ... LLCP2022.XPT in data/raw/
 #      (see data/raw/README.md for where to download them).
 #               These files can be downloaded here: https://www.cdc.gov/brfss/annual_data/annual_data.htm
@@ -16,11 +18,11 @@
 #        data/clean/received_stag/empty_diff_df.csv     (staggered adoption)
 #   3. Install the R packages listed under "Required packages" below.
 #  
-# How to run it:
+# HOW TO RUN
 #   1. Set the root_dir variable below to the path of the working directory on your machine.
 #   2. Open RStudio or VS Code and source this script. It will run all the component scripts in order. 
 # 
-# Output:
+# INPUT/OUTPUT *revise*
 #   1. A clean, harmonized dataset in data/clean/undid_input
 # =============================================================================
 

@@ -1,12 +1,28 @@
 # =============================================================================
-# 00_config.R: Shared configuration
+# 00_config.R: Shared settings 
 #
-# This script defines all settings shared across the project: directory paths, 
-# states of interest, study years, and the year-specific variable names in BRFSS.
+# WHAT IT DOES
+#   This script defines the setting that the pther scrips use like the folder paths, 
+#   find_xpt(), which finds the raw BRFSS file for each year, the 6 US states used as 
+#   the control group, study years, get_year_config(), a lookup of BRFSS variable names, 
+#   as some of them change between years. This script also loads the needed packages.
 #
-# Sourced by main.R before any other script.
+# BEFORE RUNNING
+#   main.R must have set root_dir (the top folder of the repository).
+#  
+# HOW TO RUN
+#   This script is not run on its own. main.R runs it first to set up the environment for 
+#   the other scripts to pull the correct folders and use the correct variable names.
+# 
+# INPUT/OUTPUT *revise*
+#   This script does not create any data files. It will create the data/raw, data/clean and 
+#   output folders if they are missing. 
 # =============================================================================
+
+
+
 # --- Packages -----------------------------------------------------------------
+# main.R checks that these are installed before running this file.
 library(haven)
 library(dplyr)
 library(tidyr)
@@ -14,41 +30,54 @@ library(purrr)
 library(undidR)
 
 
-# --- Directories --------------------------------------------------------------
-# root_dir is set in main.R before this file is sourced.
-# All paths are built with file.path() for platform independence.
 
+
+# --- Folders ------------------------------------------------------------------
+# root_dir (the top folder of the repository) is set in main.R.
+#   raw_dir    raw BRFSS .XPT files, downloaded by the user (not in the repo)
+#   clean_dir  cleaned data and undidR files created by the scripts
+#   out_dir    tables and logs created by the scripts
+ 
 raw_dir   <- file.path(root_dir, "data", "raw")
 clean_dir <- file.path(root_dir, "data", "clean")
 out_dir   <- file.path(root_dir, "output")
-
+ 
+# Create any folder that is missing. data/raw and data/clean is not stored in the repository,
+# so it will not exist after a you download the repo, instead they are created by the scripts. 
+dir.create(raw_dir,   showWarnings = FALSE, recursive = TRUE)
 dir.create(clean_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(out_dir,   showWarnings = FALSE, recursive = TRUE)
 
-# --- Locate a year's XPT file -------------------------------------------------
-# look at reproduce guide for this? Maybe an easier way to do it??  
-# CDC ships some years with a trailing space in the filename ("LLCP2016.XPT ").
-# Renaming by hand would be an undocumented step a replicator wouldn't know to
-# perform, so match on the year and tolerate stray whitespace instead.
+
+# --- Find the raw file for one year -------------------------------------------
+# Once you download the LLCP{year}.XPT files from the BRFSS, put them in data/raw/ and this function will find them.
+# This function is needed as some years the BRFSS files have a trailing space in the filename (e.g., "LLCP2016.XPT "), 
+# so it matches on the year and ignores whitespace instead of requiring you to rename certain year files. 
+# CHECK 3: RAW DATA FILE ERROR: Script will stop if no file, or more than one file, matches.
 find_xpt <- function(yr, dir = raw_dir) {
   files <- list.files(dir, pattern = "\\.XPT\\s*$", ignore.case = TRUE)
   files <- files[!startsWith(files, "._")]
   hit   <- files[grepl(as.character(yr), files, fixed = TRUE)]
-
+ 
   if (length(hit) == 0) {
     stop("No .XPT file found for ", yr, " in ", dir)
   }
   if (length(hit) > 1) {
     stop("Multiple .XPT files match ", yr, ": ", paste(hit, collapse = ", "))
   }
-
+ 
   file.path(dir, hit)
 }
 
 
-# --- Target states (FIPS codes) -----------------------------------------------
-# These 6 US states serve as untreated controls in the unDiD comparing against Canada 
 
+
+
+# --- Target states (FIPS codes) -----------------------------------------------
+# These 6 US states will act as the control group They are pooled into one silo in 
+# 04_undid_prep.R. Note: not every state asked the cannabis questions in every year. 
+# The tables in output/module_coverage.csv show which years each state is in. *REVIEW*
+ 
 target_states <- c(
   16,  # Idaho
   27,  # Minnesota
@@ -57,7 +86,7 @@ target_states <- c(
   47,  # Tennessee
   56   # Wyoming
 )
-
+ 
 state_labels <- c(
   "16" = "Idaho",
   "27" = "Minnesota",
@@ -72,24 +101,23 @@ state_labels <- c(
 years <- 2016:2022
 
 
-# --- Within silo harmonization variable names -------------------------------------
+#** this is what you need to write about in the guide
+
+# --- Within Silo variable names harmonization by year--------------------------
 # BRFSS renames some variables across survey years. This takes the column names in the .XPT files 
-# and renames them to a standardized name. See README files for details. 
-#UNDID  CHECK IF THEY NEED TO BE THE SAME *****
-#
+# and renames them to a standardized name. See README files for more details on within silo variable name changes. 
 # How it works:
 #   names(config)  = column names as they appear in the .XPT for that year
 #   values(config) = standardized column names used in the analysis dataset
-#
-# Example: setNames("marijuana_days", "MARIJANA") creates the element
+##*REVISE does this actually make sense** 
+# find a way to make it clear that this is like within silo variable name changes, not across silo variable name changes! 
+# Example: setNames("marijuana_days", "MARIJANA") will find the column called MARIJANA  and rename it to marijuana_days.
 #   "MARIJANA" = "marijuana_days"
-# meaning it finds the column called MARIJANA and rename it to marijuana_days.
-#
 # Variables that do not exist in a given year (e.g., BIRTHSEX before 2019)
 # are handled after: the "available" check in 01_extract_harmonize.R
 # skips them, and bind_rows() in 02_clean_append.R fills them with NA.
-#
-# Variable name changes across the BRFSS 2016-2022: 
+#*create a table for within silo variable name changes across years?*
+# Variable name changes across the BRFSS 2016-2022:
 #   Cannabis:       MARIJANA (2016-17) -> MARIJAN1 (2018-22)
 #   Binge drinking: _RFBING5 (2016-21) -> _RFBING6 (2022)
 #   Sex (primary):  SEX (2016-17) -> SEX1 (2018) -> _SEX (2019-22)

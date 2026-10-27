@@ -1,29 +1,45 @@
 # =============================================================================
-# 02_clean_append.R — Clean variables, create derived measures, append years
+# 02_clean_append.R — Clean variables, append years *add smth revise me*
+# 
+# WHAT IT DOES
+#   Loads the yearly .rds files from 01_extract_harmonize.R, stacks them and 
+#   keeps only the respondents who were asked the cannabis module question, sets 
+#   "dont know" and "refused" codes to NA , creates cannibis use variables and 
+#   recodes some variables to match the CCHS. Saves the combined datset to 
+#   data/clean/brfss_analysis_2016_2022.rds.
 #
-# Loads the yearly .rds files from 01_extract_harmonize.R, stacks them,
-# filters to respondents with cannabis module data, cleans non-response
-# codes, creates variables, and saves the analysis dataset.
+# BEFORE RUNNING
+#   01_extract_harmonize.R must have run, to create the yearly .rds files which 
+#   must be in data/clean/. main.R also runs 00_config.R first, which this script needs.
 #
-# Input:  data/clean/brfss_clean_{year}.rds (one per year)
-# Output: data/clean/brfss_analysis_2016_2022.rds
+# HOW TO RUN
+#   Not run on its own. main.R runs it after 01_extract_harmonize and 00_config.R scripts.
 #
-# Cleaning decisions documented:
-#   - BRFSS non-response codes (77/88/99 and 7/9) are set to NA.
+# INPUT/OUTPUT
+#   Input:  data/clean/brfss_clean_{year}.rds (one per year)
+#   Output: data/clean/brfss_analysis_2016_2022.rds
+#
+# Cleaning decisions documented: 
+#   - BRFSS codes for "dont know" and "refused" as NA.
 #   - marijuana_days 88 ("none") is recoded to 0, not NA.
 #   - PHYSHLTH and MENTHLTH 88 ("none") recoded to 0.
 #   - Education (EDUCA) is recoded from 6 categories to 4 for
-#     harmonization with the CCHS.
-#   - Income is recoded into 8 categories instead of 11 categories. 
-#
-# Requires: 00_config.R sourced first
+#     harmonization with the CCHS.  *revise* should this be in line with unDID unfilled step 1??
+#   - Income has 8 categories in 2016-2020 and 11 in 2021-2022. Categories 9 to
+#     11 are collapsed into 8, so the top category means the same thing in
+#     every year (income_8cat). *revise* 
 # =============================================================================
+
+
+
+
 
 cat("============================================================\n")
 cat("STEP 2: CLEAN AND APPEND\n")
 cat("============================================================\n\n")
 
 # --- Load and append all years ------------------------------------------------
+# bind_rows() fills any variable that is missing in a year with NA.
 
 df_list <- list()
 
@@ -41,18 +57,19 @@ rm(df_list)
 gc()
 
 
-# --- Filter to cannabis module respondents ------------------------------------
-# Respondents with marijuana_days == NA were never asked the question (their
-# state did not ask the marijuana module that year). 
+# --- Keep those who were asked the cannabis question ---------------------------
+# Missing marijuana_days means the respondent was never asked the question, because 
+# their state did not include the marijuana module that year, so these rows are dropped.
 # 88 = "none" is recoded to mean 0 days of use.
 
 brfss <- brfss %>%
-  filter(!is.na(marijuana_days) | marijuana_days == 88)
-
+  filter(!is.na(marijuana_days))
+ 
 cat("After filtering to cannabis module respondents:", nrow(brfss), "obs\n\n")
+ 
 
 
-# --- Clean non-response codes ------------------------------------------------
+# --- Clean the non-response codes and create new variables  ----------------------
 # BRFSS coding:
 #   77 or 7   = Don't know / Not sure
 #   88        = None (recoded to 0)
@@ -108,7 +125,9 @@ brfss <- brfss %>%
     # 9 = refused -> NA
     education_raw = ifelse(education_raw == 9, NA, education_raw),
     
-    # ---- EDUCATION (recoded to 4 categories for CCHS harmonization) ----
+    # ---- EDUCATION (recoded to 4 categories for CCHS harmonization) ---- *revise* should this be in line with unDID unfilled step 1??
+    # Not used in the undidR analysis: 04_undid_prep.R builds its own
+    # 3-category education variable directly from education_raw.
     # Collapses raw EDUCA to match the 4 CCHS education categories:
     #   1 = Less than secondary (EDUCA 1-3: never attended, elementary, some HS)
     #   2 = Secondary graduate (EDUCA 4: HS graduate or GED)
@@ -122,11 +141,13 @@ brfss <- brfss %>%
       TRUE                           ~ NA_real_
     ),
     
-    # ---- EDUCATION (BRFSS computed 4-level, maybe delete? ----
+    # ---- EDUCATION (BRFSS computed 4-level, maybe delete? *revise*----
+    # 9 = DK/refused -> NA
+    # Not used in the analysis. Kept for the missingness tables in
+    # 03_missingness.R.
     # 9 = DK/refused -> NA
     education_4cat = ifelse(education_4cat == 9, NA, education_4cat),
     
-
     # ---- INCOME ----
     # 77 = DK, 99 = refused -> NA
     # INCOME2 (2016-20) top category is 8 = $75,000+. INCOME3 (2021-22) adds
@@ -146,7 +167,7 @@ brfss <- brfss %>%
     # _PRACE: 77 = DK, 88 = no choice given (2022 only), 99 = refused -> NA
     race_preferred = ifelse(race_preferred %in% c(77, 88, 99), NA, race_preferred),
 
-    # ---- GENERAL HEALTH ----
+    # ---- GENERAL HEALTH ---- *revise* not needed???
     # GENHLTH: 1 = excellent, 2 = very good, 3 = good, 4 = fair, 5 = poor,
     # 7 = DK, 9 = refused -> NA
     general_health = case_when(
@@ -156,11 +177,11 @@ brfss <- brfss %>%
   )
 
 
-# --- State labels -------------------------------------------------------------
+# --- Add state names -------------------------------------------------------------
 brfss$state_name <- state_labels[as.character(brfss$state)]
 
 
-# --- Save analysis dataset ----------------------------------------------------
+# --- Save the combined dataset ----------------------------------------------------
 analysis_path <- file.path(clean_dir, "brfss_analysis_2016_2022.rds")
 saveRDS(brfss, analysis_path)
 
