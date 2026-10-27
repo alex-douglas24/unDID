@@ -25,10 +25,6 @@
 # main.R checks that these are installed before running this file.
 library(haven)
 library(dplyr)
-library(tidyr)
-library(purrr)
-library(undidR)
-
 
 
 
@@ -36,11 +32,9 @@ library(undidR)
 # root_dir (the top folder of the repository) is set in main.R.
 #   raw_dir    raw BRFSS .XPT files, downloaded by the user (not in the repo)
 #   clean_dir  cleaned data and undidR files created by the scripts
-#   out_dir    tables and logs created by the scripts
  
 raw_dir   <- file.path(root_dir, "data", "raw")
 clean_dir <- file.path(root_dir, "data", "clean")
-out_dir   <- file.path(root_dir, "output")
  
 # Create any folder that is missing. data/raw and data/clean is not stored in the repository,
 # so it will not exist after a you download the repo, instead they are created by the scripts. 
@@ -231,4 +225,3 @@ cat("  Target states:", paste(state_labels, collapse = ", "), "\n")
 cat("  Years:", paste(range(years), collapse = "-"), "\n")
 cat("  Raw data:", raw_dir, "\n")
 cat("  Clean data:", clean_dir, "\n")
-cat("  Output:", out_dir, "\n\n")
