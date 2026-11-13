@@ -40,7 +40,6 @@ clean_dir <- file.path(root_dir, "data", "clean")
 # so it will not exist after a you download the repo, instead they are created by the scripts. 
 dir.create(raw_dir,   showWarnings = FALSE, recursive = TRUE)
 dir.create(clean_dir, showWarnings = FALSE, recursive = TRUE)
-dir.create(out_dir,   showWarnings = FALSE, recursive = TRUE)
 
 
 # --- Find the raw file for one year -------------------------------------------
