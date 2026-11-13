@@ -1,0 +1,8 @@
+silo_name,treatment_time,time,mean_outcome,mean_outcome_residualized,covariates,date_format,freq,n
+USA,control,2016,0.0433334670786024,0.00283106259975037,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,24923
+USA,control,2017,0.0526334802398671,0.00273666164327436,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,27682
+USA,control,2018,0.067770850780062,0.00329418553123703,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,32241
+USA,control,2019,0.0803136118065641,0.0035427832029032,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,30356
+USA,control,2020,0.0821165438714033,0.00276332830206021,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,29860
+USA,control,2021,0.078131278080141,0.00229710955750152,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,27377
+USA,control,2022,0.0750348189415046,0.001815730671738,female;ageg62;ageg63;ageg64;ageg65;ageg66;educ2;educ3;hh_inc2;hh_inc3;hh_inc4;hh_inc5;hh_inc6;hh_inc7;hh_inc8;health52;health53;health54;health55;minority,yyyy,1 year,5744
