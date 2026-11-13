@@ -1,120 +1,37 @@
 # =============================================================================
-# part2_main.R: Part 2 controller script. Prepare the silo data and run undidR
-#               stage two 
+# 01_data_cleaning.R: Prepare the silo data to match Central's files
 #
 # WHAT IT DOES
-#   This is the script for part 2 of the undidR analysis. This can only occur once 
-#   central sets up the design and sends each silo the empty_diff_df.csv. 
-#   Stage two happens inside each silo. The silo prepares its data to match that file, 
-#   points undidR to the file, and send back two filled to central: 
-#     filled_diff_df_<silo>.csv    the ATT estimates (with and without
-#                                  covariates) and their variances
-#     trends_data_<silo>.csv       the mean outcome for every year
-#
-#   In this project: this is stage two for the US silo, which is the six BRFSS
-#   control states pooled into one silo named "USA". It runs stage two twice, 
-#   once for common adoption and once for staggered adoption. Stage one is not
-#   run here, because the CCHS silo does it. 
-#   
 #   In line with the manuscript this file goes through the following steps: 
-#     a. variables names to match teh empty_diff_df.csv exactly received from Central 
-#     b. time column that has string/text only 
-#     c. silo name column that matches the silo name is empty_diff_df.csv received from Central, stored as text 
-#     d. no missing values in any varaible used in th analysis
-#     e. a 0/1 dummy column for eahc category of every categorical variable with more than two categories, leaving out the reference category. 
+#     a. recodes variables names to match the empty_diff_df.csv exactly received from Central 
+#     b. converts time column to text only 
+#     c. adds silo name column that matches the silo name is empty_diff_df.csv received from Central, stored as text 
+#     d. removes missing values in any varaible used in the analysis
+#     e. creates a a 0/1 dummy column for each category of every categorical variable with more than two categories, leaving out the reference category. 
 #     For example if a variable has 4 categories, three dummy columns are created, one for each of the non-reference categories.
-#     f. outcome column. Central and the silos must have agreed on what it measures. For example, cannabis use in the opast 30 
-# days in one silo cant be matched to use in past 12 months in another silo. 
-# 
+#     f. checks the data against the received files from Central and saves the undidR input data.
 #
-# INPUT/OUTPUT
-#   Input:  data/clean/brfss_analysis_2016_2022.rds           from Part 1
-#           data/undid/common_adoption/empty_diff_df.csv      from Central
-#           data/undid/staggered_adoption/empty_diff_df.csv   from Central
-#   Output: data/clean/brfss_undid_input.rds                  the undidR input data
-#           data/undid/common_adoption/                       filled_diff_df_USA.csv and
-#                                                             trends_data_USA.csv
-#           data/undid/staggered_adoption/                    filled_diff_df_USA.csv and
-#                                                             trends_data_USA.csv
-#   The filled_diff_df_USA.csv and trends_data_USA.csv files in the two undid
-#   folders are the files to send back to the CCHS silo. In this case we are demonstrating 
-#   both staggered and common adoption, but in a real project only one would be used.
+# OUTPUT
+#   data/clean/brfss_undid_input.rds
 #
-# HOW TO RUN **revise look at the guide to make sure this is correct**
-#   Open a terminal and run:
-#     cd <path to this repository>/code/part2_undid_stage_two
-#     R CMD BATCH part2_main.R
-#   Or open this file in RStudio or VS Code and source it.
+# HOW TO RUN
+#   Not run on its own. part2_run_all.R runs it first.
 #
 # BEFORE RUNNING
-#   - Part 1 must have run, so that data/clean/brfss_analysis_2016_2022.rds exists.
-#   - The empty_diff_df.csv files from the CCHS silo must be saved in
-#     data/undid/common_adoption/ (common adoption) and
-#     data/undid/staggered_adoption/ (staggered adoption).
-#   - Install the R packages checked below.
+#   Part 1 must have run, and part2_run_all.R must have set silo_name, clean_dir,
+#   common_file and stag_file.
 # =============================================================================
 
 
-# --- Required packages ---------------------------------------------------------
-# Stops if a package is missing. Tested with R 4.4.1 and undidR 3.0.2.
-required_packages <- c("here", "dplyr", "undidR")
-missing_packages  <- setdiff(required_packages, rownames(installed.packages()))
-
-if (length(missing_packages) > 0) {
-  stop("Please install these R packages, then run part2_main.R again: ", paste(missing_packages, collapse = ", "))
-}
-
-library(dplyr)
-library(undidR)
-
-
-# --- Find the project folder ---------------------------------------------------
-# root_dir is the top folder of this repository: the folder that contains
-# code/, data/ and appendix/. Every other path in the project is built from it.
-root_dir  <- here::here()
-
-# CHECK 2: PROJECT FOLDER ERROR: script will stop if the code folder isn't where its supposed to be. 
-if (!file.exists(file.path(root_dir, "code", "part2_undid_stage_two", "part2_main.R"))) {
-  stop("Could not find code/part2_undid_stage_two/part2_main.R under ",
-       root_dir, ". Run part2_main.R from inside the repository, and keep its ",
-       "original folder layout.")
-}
-
-
-# --- Settings and files received from the CCHS silo ----------------------------
-# In general: stage two starts from the empty_diff_df.csv file sent by Central
-# The silo name must be spelled exactly as it is in that file.
-# In this project: the US silo is called "USA". The two received files are kept
-# in separate folders so that the filled files are saved next to them.
-clean_dir  <- file.path(root_dir, "data", "clean")
-common_dir <- file.path(root_dir, "data", "undid", "common_adoption")
-stag_dir   <- file.path(root_dir, "data", "undid", "staggered_adoption")
-
-silo_name   <- "USA"
-common_file <- file.path(common_dir, "empty_diff_df.csv")
-stag_file   <- file.path(stag_dir,   "empty_diff_df.csv")
-
-# CHECK 3: INPUT FILE ERROR: script will stop if the input file is not in place.
-if (!file.exists(file.path(clean_dir, "brfss_harmonized.rds"))) {
-  stop("Missing data/clean/brfss_harmonized.rds. Run Part 1 first.")
-}
-
-for (f in c(common_file, stag_file)) {
-  if (!file.exists(f)) {
-    stop("Missing ", f, ". Save the empty_diff_df.csv file received from the ", "CCHS silo there.")
-  }
-}
-
 # --- Load the analysis dataset -------------------------------------------------
-# Made in Part 1 (02_clean_append.R).
+# Made in Part 1 
 brfss <- readRDS(file.path(clean_dir, "brfss_analysis_2016_2022.rds"))
 cat("Loaded analysis dataset:", nrow(brfss), "obs\n\n")
 
 
-
 # --- (a) Recode to the variable names and coding agreed with Central  ------------
-# In general: the names and coding must match what was agreed with Central
-# In this project: the six agreed covariates are female, minority, ageg6, educ, hh_inc and health5. 
+# names and coding must match what was agreed with Central. In this example the six 
+# agreed covariates are female, minority, ageg6, educ, hh_inc and health5. **revise**
 # Each one is made from a BRFSS variables cleaned in Part 1. 
 #   female    <- sex_reported    (1 = male, 2 = female, recoded to 0/1)
 #   ageg6     <- age_6grp        (_AGE_G, 6 imputed age groups; no recode)
@@ -250,33 +167,33 @@ cat(paste(undid_covariates, collapse = ";"), "\n\n")
 # In this project: the outcome is use30, made in 02_clean_append.R. It is 1 if
 # the respondent used cannabis on at least one of the past 30 days, and 0 if on
 # none. **revise** ensure this is also correct didn't think it was a binary variable but a count of days used?
- 
- 
+# do you even need this check? its not above 
+
 # --- Check the data against the received files ---------------------------------
-# Before running stage two, check that the data matches what central sent. 
-# In this project: the checks below are run on both received files. 
- 
+# Before running stage two, check that the data matches what central sent.
+# The checks below are run on both received files.
+
 # CHECK 4: COVARIATE ERROR: every covariate must be present and must take at
 # least two different values. A covariate that is the same for every respondent
 # cannot be estimated in stage two (it would duplicate the intercept).
 missing_covariates <- setdiff(undid_covariates, names(brfss))
- 
+
 if (length(missing_covariates) > 0) {
   stop("Missing covariate(s): ", paste(missing_covariates, collapse = ", "))
 } else {
   cat("All", length(undid_covariates), "covariates present.\n")
 }
- 
+
 no_variation <- undid_covariates[
   sapply(brfss[undid_covariates], function(x) length(unique(x)) < 2)
 ]
- 
+
 if (length(no_variation) > 0) {
   stop("Covariate(s) with no variation: ",
        paste(no_variation, collapse = ", "),
        ". These cannot be estimated in stage two.")
 }
- 
+
 # Print the values each covariate takes. Every dummy should show 0, 1.
 cat("\nObserved covariate codings:\n")
 for (v in undid_covariates) {
@@ -284,15 +201,15 @@ for (v in undid_covariates) {
               paste(sort(unique(brfss[[v]])), collapse = ", ")))
 }
 cat("\n")
- 
+
 # CHECK 5: DATA TYPE ERROR: the time column and the silo name column must be
 # text, and no variable used in the analysis can have a missing value.
 stopifnot(is.character(brfss$year), is.character(brfss$silo_name))
- 
+
 if (anyNA(brfss[, c("year", "silo_name", "use30", undid_covariates)])) {
   stop("Missing values remain in a variable used in the analysis.")
 }
- 
+
 # CHECK 6: RECEIVED FILE ERROR: for each received file, the silo name and every
 # covariate it lists must match the data exactly.
 check_received_file <- function(path) {
@@ -314,88 +231,19 @@ check_received_file <- function(path) {
  
   cat("Checked", path, "\n")
 }
- 
+
 check_received_file(common_file)
 check_received_file(stag_file)
 cat("\n")
- 
- 
+
+
 # --- Keep the columns undidR needs and save ------------------------------------
 # state and finalwt (the BRFSS sampling weight) are kept, but undid_stage_two()
 # doesn't use sampling weights, so they are not used in stage two. **explain the diff thing here?? vs other weight??**
 undid_input <- brfss %>%
   select(year, silo_name, use30, state, finalwt, all_of(undid_covariates))
- 
 undid_path <- file.path(clean_dir, "brfss_undid_input.rds")
 saveRDS(undid_input, undid_path)
- 
+
 cat("Undid input dataset:", undid_path, "\n")
 cat("Dimensions:", nrow(undid_input), "obs x", ncol(undid_input), "variables\n\n")
- 
- 
-# --- Stage two: common adoption ------------------------------------------------
-# stage two points undidR to the empty_diff_df.csv received from Central. 
-# undidR uses that file together with the silo's data to calculate
-# the before-and-after differences, and saves the filled file and the trends
-# file in the folder given by filepath.
-# In this project: reads data/undid/common_adoption/empty_diff_df.csv and saves
-# the two output files in that same folder.
- 
-cat("============================================================\n")
-cat("STAGE TWO: COMMON ADOPTION\n")
-cat("============================================================\n\n")
- 
-stage2 <- undid_stage_two(
-  empty_diff_filepath = common_file,
-  silo_name           = silo_name,
-  silo_df             = undid_input,
-  time_column         = "year",
-  outcome_column      = "use30",
-  silo_date_format    = "yyyy",
-  filepath            = common_dir
-)
- 
-print(stage2$diff_df[, c("silo_name", "treat", "start_time", "end_time",
-                         "diff_estimate", "diff_estimate_covariates", "n")])
- 
-cat("\nSend back: filled_diff_df_", silo_name, ".csv and trends_data_",
-    silo_name, ".csv (from ", common_dir, ")\n\n", sep = "")
- 
- 
-# --- Stage two: staggered adoption ---------------------------------------------
-# Same as above, with the staggered adoption file. Its rows list every
-# comparison between a treatment start year (gvar) and a later year, so the
-# filled file has several rows for this silo.
-# In this project: reads data/undid/staggered_adoption/empty_diff_df.csv and
-# saves the two output files in that same folder. If you were to use undid you would 
-# only run one of the two adoption types, not both.
- 
-cat("============================================================\n")
-cat("STAGE TWO: STAGGERED ADOPTION\n")
-cat("============================================================\n\n")
- 
-stage2_stag <- undid_stage_two(
-  empty_diff_filepath = stag_file,
-  silo_name           = silo_name,
-  silo_df             = undid_input,
-  time_column         = "year",
-  outcome_column      = "use30",
-  silo_date_format    = "yyyy",
-  filepath            = stag_dir
-)
- 
-print(stage2_stag$diff_df[, c("silo_name", "gvar", "treat", "gt",
-                              "diff_estimate", "diff_estimate_covariates", "n")])
- 
-cat("\nSend back: filled_diff_df_", silo_name, ".csv and trends_data_",
-    silo_name, ".csv (from ", stag_dir, ")\n\n", sep = "")
-
-# --- Record the computing environment -----------------------------------------
-# Printing the session info puts the R and package versions in the log.
-cat("\n============================================================\n")
-cat("SESSION INFO\n")
-cat("============================================================\n\n")
-cat("Date:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
-print(sessionInfo())
-
-cat("\n\nPart 2 complete.\n")
