@@ -1,294 +1,280 @@
-# UNDiD: BRFSS US Control States (2016–2022)
+# Difference in Difference with Unpoolable Data (UN-DID): Effects of Cannabis Legalization on Usage
 
-## Overview
+This repository contains code for an example paper of the undidR package developed in [Karim, Webb, Austin, and Strumpf (2025)](https://arxiv.org/abs/2403.15910v2). UndidR is designed to estimate the average treatment effect on the treated (ATT) in settings where data from different silos cannot be pooled together (potentially for reasons of confidentiality). 
 
-This repository contains the data for preparing BRFSS (Behavioral Risk Factor Surveillance System) data for 6 US states used as untreated controls in unpoolable difference in differences.
+To demonstrate the use of the package the example of cannabis legalization on usage is investigated. The question is the effect of Canada's cannabis legalization (17 October 2018) on cannabis use. The treated silo is Canada, measured with the CCHS (Canadian Community Health Survey). The control silo is six US states, measured with the BRFSS (Behavioral Risk Factor Surveillance System). Neither silo's data can be shared with the other, so the analysis uses the [undidR package](https://ebjamieson97.github.io/undidR/). This example paper goes through both common and staggered adoption scenarios. 
 
-## How to Reproduce
 
-### Packages
+ 
+## UndidR: General Overview
 
--   R (tested on version X.X.X)
--   R packages: `haven`, `dplyr`, `tidyr`, `purrr`,`undidR`
+![The three stages of UN-DID general](appendix/UNDIDgeneral_overview.png)
+ 
+*Figure 1. UndidR overview from (<https://ebjamieson97.github.io/undidR/>). Note the diagram calls Central the "Server".*
+Only summary files move between silos, never the survey data.
+ 
+UN-DID lets several groups estimate one difference-in-differences effect without ever pooling their data. Each silo keeps its own survey data and shares only a csv. The server or central coordinates the silos, sets up the analysis and puts the results together. UN-DID happens in three stages. 
+ 
+**Stage one (Central).** Central sets up the design and records it in a file called `empty_diff_df.csv`, which it sends to every silo. Besides the empty result columns that each silo later fills in, the file defines the following:
+- **Silo names and treatment/control:** the silo names (`silo_name`) and which are treated (`treat`, 1 = treated, 0 = control). Each silo's name in its own data must match this exactly.
+- **Treatment timing:** `common_treatment_time` for common adoption. For staggered adoption the file instead gives the treatment year per silo (`gvar`) and one row per before-and-after comparison (`diff_times`, `gt`).
+- **Timing format:** `start_time`, `end_time`, `date_format` (for example `yyyy`) and `freq` (for example `1 year`). The time column in each silo's data has to follow these.
+- **Covariates:** the exact column names in `covariates`, separated by semicolons. Each silo's data must contain a column with each of these names, so categorical variables are already spelled out as dummy columns (for example `ageg62`, `hh_inc3`).
+- **Weights stuff?:** `weights` column note here? `none` `diff` `att` `both` maybe not necessary? ask kwasi
+ 
+**Stage two (each silo).** Each silo prepares its own data so that it matches Central's file. This means matching the variable names, the categories of each variable (notes on harmonization below, ask Kwasi re this) and the silo name. The silo then runs undidR on its own data. This produces two summary files, `filled_diff_df_<silo>.csv` and `trends_data_<silo>.csv`, which the silo sends back to Central. No survey data leaves the silo.
+ 
+**Stage three (Central).** Central combines the filled files from every silo and estimates the overall treatment effect.
 
-### Data
+---
+## UndidR: Example Overview 
+![The three stages of UN-DID example](appendix/UNDIDexample_overview.png)
+*Figure 2. UndidR example overview adapted from (<https://ebjamieson97.github.io/undidR/>). Note the diagram calls Central the "Server".*
 
-Download the Combined Landline and Cellphone (LLCP) datasets in SAS Transport (.XPT) format for 2016–2022 from the [CDC BRFSS Annual Survey Data page](https://www.cdc.gov/brfss/annual_data/annual_data.htm) and place them in `data/raw/`:
+This paper aims to answer the question if  Canada's legalization of recreational cannabis on 17 October 2018 change the share of people who used cannabis in the past 30 days? There are two silos in this project. Canada as the treated silo using data from the CCHS, while 6 states in the US that did not legalize marijuana are pooled into one control silo. Seeing as the two surveys cannot be combined into one dataset, undidR is needed. 
 
-```         
-data/raw/LLCP2016.XPT
-data/raw/LLCP2017.XPT
-...
-data/raw/LLCP2022.XPT
-```
-File sizes 
-2016 79.5mb
-2017 102mb
-2018 69.5mb
-2019 93.4mb
-2020 64.4mb
-2021 77.8mb
-2022 80.7mb
+In this example the Canadian silo also acts as Central, so it plays two roles. As Central, it sets up the design and sends the empty file `empty_diff_df.csv` to the US silo. As a silo, it prepares and analyzes its own CCHS data. Each silo's work is split into two parts: 
+1. **Part 1: Prepare the Data.** Each  silo turns its raw survey files into one clean dataset (specific details below). This does not need Central's file, so it can be done first. 
 
-Add the part about how the files download and how they dont need renaming - they just need to open the .ZIP file - the code should fix the names in 00 config at lines.... 
+2. **Part 2: Run undidR Stage 2.** Once Central's file arrives, the silo matches its data to it and runs undidR stage 2. The result is the two summary files, `filled_diff_df_<silo>.csv` and `trends_data_<silo>.csv` which the silo sends back to Central.
 
-Only the main LLCP files are needed. Version-specific files (V1/V2/V3) are not required for these 6 states, as they always included the marijuana module on all questionnaire versions.
+Central then combines the files from both silos to get the overall effect of legalization (stage three).
 
-### Run
 
-``` bash
-cd /path/to/this/project
-R CMD BATCH main.R
-```
+## UndidR: Variables across silos
+ 
+The table shows the variable names and categories that each variable The silos agreed on one outcome and six covariates. This table shows what each measures in each survey. The last column says how the two surveys were treated, using the three groups from the manuscript (explained below the table).
+ 
 
-RStudio: open `main.R` and press `Cmd+Shift+Enter` (Source).
+| Agreed name | What it measures | Harmonization |
+|---|---|---|
+| `use30` (outcome) | Any cannabis use in the past 30 days (1 = yes, 0 = no) | Exactly Harmonized - ? |
+| `female` | Sex (0 = male, 1 = female) | Exactly Harmonized |
+| `ageg6` | Age group, 6 categories | Recoded to match |
+| `hh_inc` | Household income, 8 categories (8 = $75,000 or more) | Recoded to match |
+| `health5` | Self-rated general health, 1 (excellent) to 5 (poor) | Exactly Harmonized |
+| `educ` | Highest education completed | Recoded to match |
+| `minority` | Minority status | Not harmonized |
+ 
+**Harmonized.** The two surveys measure the same construct, and the variable is recoded so the categories match. For example, `hh_inc` is harmonized across silos. BRFSS income comes in eight categories, from less than $10,000 to $75,000 or more. The CCHS records a dollar amount, which can be recoded into matching categories. Though the cross country exchange rate is abstracted as income is measuring the same construct in both surveys. 
+<br>
 
-## Project Structure
+**Feasible, but not harmonized.** The categories could be collapsed to roughly match, but this would lose detail and the concepts are not identical. For example, `educ` is not harmonized across the 2 silos. The BRFSS education has six categories (never attended or kindergarten only; grades 1-8; grades 9-11; grade 12 or GED; college 1-3 years; college 4 years or more). The CCHS has four (less than secondary; secondary graduate; some post-secondary; post-secondary or university diploma). Collapsing would lose the finer measure of low education in the BRFSS, and "college, four years or more" is not necessarily the same as "post-secondary or university diploma". UN-DID can include education variables whose categories differ across silos, so we do not harmonize them.
+<br>
 
-```         
-├── main.R                         # Master script runs everything
-├── README.md                      # This file
-├── .gitignore
-├── code/
-│   ├── 00_config.R                # Shared settings, paths, variable mappings
-│   ├── 01_extract_harmonize.R     # Read XPT, filter states, rename variables
-│   ├── 02_clean_append.R          # Clean non-response codes, 
-├── data/
-│   ├── raw/                       # Raw .XPT files 
-│   └── clean/                     # Intermediate .rds files 
-```
+**Not harmonized.** The concepts measure different concepts in different silos (countries in this case). For example, race (`minority`) is not harmonized in this example as each jurisdictions understanding of it is different. The CCHS asks about visible minority status and Indigenous identity, while the BRFSS has a computed race variable with American categories (white non-Hispanic; Black non-Hispanic; other race non-Hispanic; multiracial non-Hispanic; Hispanic). It is not practically possible to harmonize these, and we would not want to. Though this would be a problem for pooled data analysis, UN-DID can accommodate it easily.
+<br>
 
-## Variable Reference Table
+**Two kinds of harmonization.** Within this readme and throughout the scripts there are two kinds of harmonization that must be done. 
+- **Within-silo:** making one survey consistent across its own years (for example, the BRFSS renames its cannabis variable in 2018). Each silo does this on its own in Part 1. See *Within-silo harmonization* in the BRFSS section below(and CCHS?) for more specific details. 
+- **Between-silo:** making the two surveys measure the same thing, as described in the table above. Meaning each variable falls into either harmonized, feasible but not harmonized or not harmonized. Once agreed, each silo does this on its own in Part 2. See *Between-silo harmonization* in Part 2 of the BRFSS section. (check with Kwasi based on harmonization)
+<br>
 
-The table below maps each concept to its name in the BRFSS raw data, the CCHS, and the final analysis dataset (`brfss_analysis_2016_2022.rds`). For details on harmonization decisions, see the section below.
+Variables with more than two categories (`ageg6`, `hh_inc`, `health5`, and `educ` where used) are turned into 0/1 dummy columns by each silo, leaving out the lowest category as the reference. A dummy for each category lets each one have its own effect, measured against the reference group. One category must be left out because the dummies of a variable always add up to 1, which would duplicate the regression's constant. Every silo has to build its dummies with the same names and the same reference category so that they match Central's file. In the current code this gives the 20 covariate columns in Central's file: `female`, `ageg62`-`ageg66`, `educ2`, `educ3`, `hh_inc2`-`hh_inc8`, `health52`-`health55`, `minority`.
 
-| Concept | BRFSS raw name(s) | CCHS name | Final dataset name | Notes |
-|----|----|----|----|----|
-| **Outcome** |  |  |  |  |
-| Cannabis use (days) | MARIJANA / MARIJAN1 | *TBD* | `marijuana_days_clean` | 0–30 days; derived from raw |
-| Cannabis use (binary) | — | — | `use30` | 1 = used, 0 = did not |
-| Heavy use (25+ days) | — | — | `mj_high` | Derived: 1 = 25+ days |
-| Moderate use (1-24 days) | — | — | `mj_mod` | Derived: 1 = 1-24 days |
-| **Demographics** |  |  |  |  |
-| Sex | SEX / SEX1 / \_SEX | *TBD* | `sex` | Harmonized across years |
-| Sex (reported) | SEX / SEX1 / SEXVAR | *TBD* | `sex_reported` | Raw respondent-reported |
-| Birth sex | BIRTHSEX | *TBD* | `birthsex` | 2019–22 only |
-| Age (5-year groups) | \_AGEG5YR | *TBD* | `age_5yr` | 14 categories |
-| Age (6 groups) | \_AGE_G | *TBD* | `age_6grp` | 18-24, 25-34, ..., 65+ |
-| Age (2 groups) | \_AGE65YR | *TBD* | `age_2grp` | 18-64 vs 65+ |
-| Age (imputed) | \_AGE80 | *TBD* | `age_imputed` | Collapsed above 80 |
-| Education (raw 6-level) | EDUCA | *TBD* | `education_raw` | Original BRFSS categories |
-| Education (harmonized) | — | — | `education_harmonized` | Recoded to match 4 CCHS categories |
-| Education (BRFSS 4-level) | \_EDUCAG | — | `education_4cat` | BRFSS computed; kept for reference |
-| Income | INCOME2 / INCOME3 | *TBD* | `income_raw` | 8 categories; see income section |
-| Marital status | MARITAL | *TBD* | `marital` | 6 categories |
-| Employment | EMPLOY1 | *TBD* | `employment` | 8 categories |
-| **Race/Ethnicity** |  |  |  |  |
-| Race (imputed) | \_IMPRACE | *TBD* | `race_imputed` | 6-level; no missing values |
-| Race (preferred) | \_PRACE1 / \_PRACE2 | *TBD* | `race_preferred` | Changes coding in 2022 |
-| Race (multiracial) | \_MRACE1 / \_MRACE2 | *TBD* | `race_multi` | Multiracial classification |
-| Race (binary) | \_RACEG21 / \_RACEG22 | *TBD* | `race_binary_wh` | White NH vs all other |
-| Race (5-level) | \_RACEGR3 / \_RACEGR4 | *TBD* | `race_5level` | 5 race/ethnicity groups |
-| Race (detailed) | \_RACE / \_RACE1 | *TBD* | `race_detailed` | Detailed classification |
-| **Health** |  |  |  |  |
-| General health | GENHLTH | *TBD* | `general_health` | 5-level self-rated |
-| Health status (binary) | \_RFHLTH | *TBD* | `health_status` | Good+ vs fair/poor |
-| Physical health (days) | PHYSHLTH | *TBD* | `physical_health` | Days not good, past 30 |
-| Mental health (days) | MENTHLTH | *TBD* | `mental_health_d` | Days not good, past 30 |
-| Mental health (3-level) | \_MENT14D | *TBD* | `mental_health_3` | 0, 1-13, 14-30 bad days |
-| Binge drinking (binary) | \_RFBING5 / \_RFBING6 | *TBD* | `binge_drink` | 1 = No, 2 = Yes |
-| **Identifiers** |  |  |  |  |
-| State | \_STATE | — | `state` | FIPS code |
-| Survey weight | \_LLCPWT | *TBD* | `finalwt` | Combined landline + cell |
-| Year | — | — | `year` | Added during extraction |
-| State name | — | — | `state_name` | Added during cleaning |
+**** KWASI QUESTION - the BRFSS code currently collapses educ to 3 categories and recodes minority to 0/1. The manuscript says neither should be harmonized *** 
 
-## Target States (FIPS codes)
+<br>
 
-| State         | FIPS | Years with cannabis module |
-|---------------|------|----------------------------|
-| Idaho         | 16   | 2016–2021                  |
-| Minnesota     | 27   | 2016–2021                  |
-| New Hampshire | 33   | 2017–2021                  |
-| North Dakota  | 38   | 2018–2022                  |
-| Tennessee     | 47   | 2016–2020                  |
-| Wyoming       | 56   | 2016–2022                  |
 
-Not all 6 states had the marijuana module every year. Missing state years are expected and do not affect DiD identification (explain why more?) meaning those states did not include the optional cannabis module in their BRFSS questionnaire that year.
+## Silo 1: BRFSS (US)
+ 
+The BRFSS silo is six US states pooled into one silo named `USA`, 2016 to 2022. It is the untreated (control) silo. All the scripts for this section are inside `US_Silo/`. 
+ 
+### What the code does
+ 
+| Part | What it does |
+|---|---|
+| Part 1 (`code/part1_prepare_data/`) | Reads the raw BRFSS files and builds one cleaned dataset (within-silo harmonization) 
+| Part 2 (`code/part2_undid_stage_two/`) | Recodes to the agreed variables, matches the data to Central's files, and runs undidR stage two (between-silo harmonization) 
+| Appendix (`appendix/`) | Tables for the paper's appendix, files for the readme file. Not part of the undidR analysis 
+ 
+<p>
 
-## How the Scripts Work
 
-The pipeline is split into three scripts, each with one job. A master script (`main.R`) runs them in order. The following explains what happens to a single variable cannabis use as it moves through the pipeline.
+### Requirements
+| | |
+|---|---|
+| Software | R 4.4.1 |
+| Packages | `here` 1.0.2, `haven` 2.5.5, `dplyr` 1.2.0, `tidyr` 1.3.1, `purrr` 1.2.1, `undidR` 3.0.2 |
+| Run on | macOS 15.6.1, Apple silicon |
+| Disk space | about 570 MB for the raw BRFSS files |
+| Run time | Part 1 about 3 minutes, Part 2 about 15 seconds, appendix under 30 seconds |
+ 
+Each script checks for the packages it needs and stops with a message that lists any that are missing. The project folder is found with `here::here()`, which uses the empty file `US_Silo/.here` to know where the silo's top folder is.
 
-### Step 1: Configure (`code/00_config.R`) figure out these name s
+<br>
 
-The config script builds a mapping between variable names and standardized names. It does not load any data, it just creates a reference for the other scripts to use. This is needed because the BRFSS renames variables across years. For example, cannabis use is called `MARIJANA` in 2016–2017 but `MARIJAN1` in 2018–2022. The config script deals with this by:
+### How to run
+ 
+**Step 1: Download the raw BRFSS files.** Download the annual BRFSS data from the CDC: <https://www.cdc.gov/brfss/annual_data/annual_data.htm>. Click each year, then download the **SAS Transport file** for that year. Save the files in `US_Silo/data/raw/`. You do not need to rename them, because the code finds each year's file by its year, even if the CDC filename has a trailing space.
 
-```         
-mj_var <- if (yr <= 2017) "MARIJANA" else "MARIJAN1"
-setNames("marijuana_days", mj_var)
-```
+| Year | File size |
+|---|---|
+| 2016 | 79.5 MB |
+| 2017 | 102 MB |
+| 2018 | 69.5 MB |
+| 2019 | 93.4 MB |
+| 2020 | 64.4 MB |
+| 2021 | 77.8 MB |
+| 2022 | 80.7 MB |
+| **Total** | **about 570 MB** |
+ 
+`data/raw/` is not stored in this repository, so create it if it does not exist.
 
-Essentially, this takes the raw name is X year and renames it `marijuana_days`. The config also stores shared settings (target states, file paths, study years) that all scripts need.
+<br>
 
-### Step 2: Extract and harmonize (`code/01_extract_harmonize.R`) 
-
-This script reads each year's raw `.XPT` file and uses the config's mapping to find and rename columns. For 2016, it finds the column called `MARIJANA`, keeps it, and renames it to `marijuana_days`. For 2019, it finds `MARIJAN1` and renames it to `marijuana_days`.
-
-### Step 3: Clean and append (`code/02_clean_append.R`) 
-
-This script loads all the yearly `.rds` files, stacks them into one dataset, and then recodes some variables for analysis. Using our running example marijuana_days we can see how it is recoded to be cleaned below. 88 is zero days which is recoded as well as 77, 99 which are recoded to missing. This script also creates the derived variables such as binary variables of heavy use or not defined as more than 25+ days of use.
-
-r
-
-```         
-marijuana_days_clean = case_when(
-  marijuana_days == 88                        ~ 0,     # "none" -> 0 days
-  marijuana_days >= 1 & marijuana_days <= 30  ~ marijuana_days,
-  TRUE                                        ~ NA     # 77, 99 -> missing
-)
+**Step 2: Run Part 1.** Open a terminal and run:
+ 
+```bash
+cd US_Silo/code/part1_prepare_data
+R CMD BATCH part1_run_all.R
 ```
 
-## Harmonization Decisions
+<br>
 
-Within silo stuff
+**Step 3: Put Central's files in place.** Central sends one `empty_diff_df.csv` for each design. Save them here (they are already included in this repository):
+ 
+- `US_Silo/data/undid/common_adoption/empty_diff_df.csv`
+- `US_Silo/data/undid/staggered_adoption/empty_diff_df.csv`
 
-Recoding to match the CCHS
+<br>
 
-Need to be able to explain the within silo harmonization (re names and measurement changes)
+**Step 4: Run Part 2.**
+ 
+```bash
+cd US_Silo/code/part2_undid_stage_two
+R CMD BATCH part2_run_all.R
+```
+<br>
 
-AND
+**Step 5: Send the files back to Central.** From each of the `common_adoption/` and `staggered_adoption/` folders, send `filled_diff_df_USA.csv` and `trends_data_USA.csv`. In a real project, only one design would be used. Both are shown here for demonstration.
+ 
+<br>
 
-Outside silo harmonization
+**Optional: the missingness tables.**
+ 
+```bash
+cd US_Silo/appendix
+R CMD BATCH missingness_tables.R
+```
+ 
+**What you should get**
+ 
+| Check | Result |
+|---|---|
+| Respondents after combining the 7 years | 304,897 |
+| Respondents asked the cannabis questions | 215,325 |
+| Analysis sample (no missing values) | 178,183 |
+| Common adoption estimate, without covariates | 0.0286 |
+| Common adoption estimate, with covariates | 0.0314 |
 
-### Exact Harmonization
 
-These variables use the same coding across all BRFSS years and map directly to CCHS equivalents with no recoding. The only harmonization needed is renaming when the BRFSS variable name changes in certain years.
+### What each script does
+ 
+In the order they run. `run_all` scripts check the packages and the project folder, then run the scripts listed after them.
+ 
+| Script | What it does | Reads and writes |
+|---|---|---|
+| `part1_run_all.R` | Runs Part 1 | Writes the log `part1_run_all.Rout` |
+| `00_config.R` | Sets the folder paths, the six states and the study years. Defines `find_xpt()` (finds each year's raw file) and the table of BRFSS variable names by year | Creates `data/raw/` and `data/clean/` if missing |
+| `01_extract_harmonize.R` | Reads each raw file, keeps the six states, and keeps and renames the variables | Reads `data/raw/LLCP{year}.XPT`. Writes `data/clean/brfss_clean_{year}.rds` |
+| `02_clean_append.R` | Stacks the seven years, keeps respondents asked the cannabis questions, sets non-response codes to missing, and creates the outcome and recoded variables | Reads `data/clean/brfss_clean_{year}.rds`. Writes `data/clean/brfss_analysis_2016_2022.rds` |
+| `part2_run_all.R` | Runs Part 2. Also checks that Part 1's data and Central's files are in place | Writes the log `part2_run_all.Rout` |
+| `01_data_cleaning.R` | Recodes to the agreed variables, converts `year` to text, adds the silo name, removes missing values, creates the dummy columns, and checks the data against Central's files | Reads `brfss_analysis_2016_2022.rds` and both `empty_diff_df.csv`. Writes `data/clean/brfss_undid_input.rds` |
+| `02_undid_stage2.R` | Runs undidR stage two, once for common adoption and once for staggered adoption | Reads `brfss_undid_input.rds` and both `empty_diff_df.csv`. Writes `filled_diff_df_USA.csv` and `trends_data_USA.csv` in each `data/undid/` folder |
+| `appendix/missingness_tables.R` | Builds the three missing data tables for the appendix. Optional | Reads `brfss_analysis_2016_2022.rds`. Writes `appendix/tables/*.csv` |
+| `appendix/to_review.r` | Old figure code kept for review. Nothing runs it | |
+ 
+Each script describes what it does, what inputs and outputs should be and how the file runs. This also saves a log of the run as `part1_run_all.Rout`.
 
-<div>
+<br>
+<br>
 
-**Marital status** (`marital`): six categories (married, divorced, widowed, separated, never married, unmarried couple) are consistent across all years. Refused (code 9) is set to NA.
+### Within-silo harmonization (BRFSS across the years)
+---
+ 
+This is how the raw BRFSS data become one consistent dataset across 2016 to 2022. It is done in Part 1 and does not involve other silos. 
+ 
 
-**Employment** (`employment`): eight categories are consistent across all years. Refused (code 9) is set to NA.
 
-**General health** (`general_health`): five-level self-rated health (excellent, very good, good, fair, poor) is consistent across all years. Don't know (7) and refused (9) are set to NA.
+**States and years.** The control group is Idaho, Minnesota, New Hampshire, North Dakota, Tennessee and Wyoming, pooled into one silo. The study years are 2016 to 2022, however, the cannabis module is optional, and states choose each year whether to use it. A state-year with no cannabis answers drops out in `02_clean_append.R`, so the control group includes different states in different years:
 
-**Mental health, 3 level** (`mental_health_3`): BRFSS-computed variable classifying respondents into 0 bad mental health days, 1–13 days, or 14–30 days. Consistent across all years. Missing (9) set to NA.
+| State | Years with cannabis data |
+|---|---|
+| Idaho | 2016-2021 |
+| Minnesota | 2016-2021 |
+| New Hampshire | 2017-2021 |
+| North Dakota | 2018-2022 |
+| Tennessee | 2016-2020 |
+| Wyoming | 2016-2022 |
+ 
+The full counts are in `appendix/tables/module_coverage.csv`.
 
-**Physical health days** (`physical_health`) and **mental health days** (`mental_health_d`): number of days in the past 30 that physical/mental health was not good. Code 88 ("none") is recoded to 0. Don't know (77) and refused (99) are set to NA.
+<br>
 
-**Age**: Four age variables are kept. All are consistent across years and require no recoding beyond setting missing codes to NA.
+**Variable names that change across years.** The BRFSS renames some variables between survey years. `00_config.R` maps each raw name to one standard name. For example, `MARIJANA` and `MARIJAN1` both measure the same thing however the names change across years meaning that one standard `marijuana_days` is needed across years. In other cases, the categories are added across year such as `INCOME2` has only 8 categories and changes in 2021 to have additional upper categories. 
+ 
+| Variable | Raw name by year |
+|---|---|
+| Cannabis days | `MARIJANA` (2016-17), `MARIJAN1` (2018-22) |
+| Sex (primary) | `SEX` (2016-17), `SEX1` (2018), `_SEX` (2019-22) |
+| Sex (reported) | `SEX` (2016-17), `SEX1` (2018), `SEXVAR` (2019-22) |
+| Birth sex | not collected (2016-18), `BIRTHSEX` (2019-22) |
+| Income | `INCOME2` (2016-20, 8 categories), `INCOME3` (2021-22, 11 categories) |
+| Race, preferred | `_PRACE1` (2016-21), `_PRACE2` (2022) |
+| Race, multi | `_MRACE1` (2016-21), `_MRACE2` (2022) |
+| Race, binary | `_RACEG21` (2016-21), `_RACEG22` (2022) |
+| Race, 5-level | `_RACEGR3` (2016-21), `_RACEGR4` (2022) |
+| Race, detailed | `_RACE` (2016-21), `_RACE1` (2022) |
+ 
+ **update post meeting with Kwasi**
 
-</div>
+A variable that does not exist in a given year (for example `BIRTHSEX` before 2019) is skipped when that year is read, and filled with missing values when the years are stacked. All of these decision are documented in each script. 
 
-### Easily Harmonized
+<br>
 
-These variables are not perfectly harmonizable across both the CCHS and BRFSS but are easily harmonized. The summary of how they are recoded ie below.
+### Between-silo harmonization 
+---
+ 
+This is done in Part 2 (`01_data_cleaning.R`), once Central's files have arrived. It follows the checklist for stage two in the undidR manuscript:
+ 
+| | What the data needs | What this code does |
+|---|---|---|
+| a | Variable names that match Central's file | Recodes to the agreed covariates (see *Variables across silos*) |
+| b | A time column that holds text only | Converts `year` to text |
+| c | A silo name column that matches Central's file | Adds `silo_name` = `USA` |
+| d | No missing values in any variable used | Removes respondents with a missing outcome or covariate |
+| e | Dummy columns for categorical variables | Creates dummies for `ageg6`, `educ`, `hh_inc` and `health5`, leaving out the lowest category |
+| f | An agreed outcome | Uses `use30` |
+ 
+The code also checks the prepared data against both of Central's files before running stage two.
 
-<div>
+<p>
+<p>
 
-**Education** (`education_harmonized`): The BRFSS measures education in six categories: (1) never attended school or only kindergarten; (2) grades 1–8; (3) grades 9–11; (4) grade 12 or GED; (5) college, one to three years; (6) college, four years or more. The CCHS uses four: (1) less than secondary, (2) secondary graduate, (3) some post-secondary, and (4) post-secondary or university diploma. The BRFSS categories are collapsed to match the four CCHS categories, mapping categories 1 to 3 to "less than secondary," category 4 to "secondary graduate," category 5 to "some post-secondary," and category 6 to "post-secondary/university diploma."
+### From raw data to analysis sample
+ 
+| Step | Respondents |
+|---|---|
+| Six states, 2016-2022, all respondents | 304,897 |
+| Asked the cannabis questions | 215,325 |
+| After removing missing values in Part 2 | 178,183 |
+ 
+Part 2 removes 37,142 respondents with a missing value on the outcome or a covariate. The missing counts are: household income 32,891, minority 3,723, outcome 2,036, education 640, general health 392 and sex 97. The counts add up to more than 37,142 because some respondents are missing more than one variable.
+ 
+<br>
+<br>
+<br>
 
-**Binge drinking** (`binge_drink`): the variable is called `_RFBING5` in 2016–2021 and `_RFBING6` in 2022. Both are binary (1 = No, 2 = Yes), but the calculation differs slightly. `_RFBING5` uses `ALCDAY5` and `DRNK3GE5`; `_RFBING6` uses `ALCDAY4` and a different threshold for `DRNK3GE5`. The binary classification is harmonized across years. Missing (9) set to NA.
-
-**Cannabis use** (`marijuana_days_clean`): the raw variable is called `MARIJANA` in 2016–2017 and `MARIJAN1` in 2018–2022. The coding is the same across years (1–30 = days used, 88 = none, 77 = don't know, 99 = refused). Code 88 is recoded to 0, 77 and 99 to NA. Derived binary variables `use30` (any use), `mj_high` (25+ days), and `mj_mod` (1–24 days) are created from the cleaned variable.
-
-</div>
-
-### Impossible to Harmonize
-
-<div>
-
-**Race/Ethnicity**: Names changes names in 2022 because of the survey changes, need to do more research about how to explain this clearly.
-
--   `race_imputed` (`_IMPRACE`, all years): 6-level imputed race/ethnicity. No missing values since it is imputed by BRFSS. Most consistent variable across years.
-
--   `race_preferred` (`_PRACE1` → `_PRACE2` in 2022): preferred race. Category definitions for codes 6+ differ between years. Don't know (77), no choice given (88, 2022 only), and refused (99) set to NA.
-
--   `race_multi` (`_MRACE1` → `_MRACE2` in 2022): multiracial classification. Don't know (77) and refused (99) set to NA.
-
--   `race_binary_wh` (`_RACEG21` → `_RACEG22` in 2022): binary white non-Hispanic vs all other. Missing (9) set to NA.
-
--   `race_5level` (`_RACEGR3` → `_RACEGR4` in 2022): 5-level race/ethnicity. Missing (9) set to NA.
-
--   `race_detailed` (`_RACE` → `_RACE1` in 2022): most detailed classification.
-
-</div>
-
-### Should not be Harmonized
-
-<div>
-
-**Income** (`income_raw`): `INCOME2` (2016–2020) has 8 categories the last being "\$75,000 or more." `INCOME3` (2021–2022) has 11 categories with finer brackets above \$75,000 (\$75k–\$100k, \$100k–\$150k, \$150k–\$200k, \$200k+). Categories 9 through 11 in the later years are recoded as missing, leaving eight categories across all years: (1) under \$10,000; (2) \$10,000–\$14,999; (3) \$15,000–\$19,999; (4) \$20,000–\$24,999; (5) \$25,000–\$34,999; (6) \$35,000–\$49,999; (7) \$50,000–\$74,999; (8) \$75,000 and above.
-
-</div>
-
-### Variables and the Harmonization
-
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | **Category**          | **Variable Name**                                                                                                                                                                           | **Question**                                                             | **Years in BRFSS**                                                                                                                                                                                                                                                                                                                        | **Measurement Method**                                                                                                                                                                                                                                                                                                            |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | AGE\                  | \_AGEG5YR                                                                                                                                                                                   | Reported age in five year age catergories calculated variable            | 7                                                                                                                                                                                                                                                                                                                                         | Fourteen level age category(18-24, 25-29, 30-34, 35-39, 40-44, 45-49, 50-54, 55-59, 60-64, 65-69, 70-74, 75-79, 80 or older, missing/don’t know refused                                                                                                                                                                           |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_AGE_G               | Imputed age in six groups                                                                                                                                                                   | 7                                                                        | Six level imputed age category (18-24, 35-34, 35-44, 45-54, 55-64, 65+)                                                                                                                                                                                                                                                                   |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_AGE65YR             | Reported age in two age groups calculated variable                                                                                                                                          | 7                                                                        | Two level age category (18-64, 65 or older, don’t know/refused/missing)                                                                                                                                                                                                                                                                   |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_AGE80               | CALCULATED: Imputed Age value collapsed above 80                                                                                                                                            | 7                                                                        | Imputed age (18-24, 25-29, 30-34, 35-39, 40-44, 45-49, 50-54, 55-59, 60-64, 65-69, 70-74, 75-79, 80 or older)                                                                                                                                                                                                                             |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | SEX\                  | \_SEX                                                                                                                                                                                       | Calculated sex variable                                                  | 4 (2019-2022)                                                                                                                                                                                                                                                                                                                             | 1 - Male, 2- Female                                                                                                                                                                                                                                                                                                               |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | SEXVAR                | Sex of respondent                                                                                                                                                                           | 4 (2019-2022)                                                            | 1 - Male, 2- Female                                                                                                                                                                                                                                                                                                                       |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | BIRTHSEX              | Are you male or female?                                                                                                                                                                     | 4 (2019-2022)                                                            | 1 - Male, 2- Female, 7 - Don't know, 9 - Refused, BLANK - Not asked or missing                                                                                                                                                                                                                                                            |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | SEX                   | Respondents Sex                                                                                                                                                                             | 2 (2016/2017)                                                            | 1 - Male, 2 - Female, 9 - Refused                                                                                                                                                                                                                                                                                                         |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | SEX1                  | Respondents Sex                                                                                                                                                                             | 1 (2018)                                                                 | 1 - Male, 2 - Female, 7 - Dont know/not sure, 9 - Refused                                                                                                                                                                                                                                                                                 |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| INCOME_NEW | INCOME2\              | Is your annual household income from all sources: (If respondent refuses at any income level, code ´Refused.´)                                                                              | 5 (2016-2020)                                                            | 1 - less than \$10,000; 2- less than \$15,000; 3 - less than \$20, 00-, 4 - Less than \$25,000, 5 - Less than \$35,000, 6 - Less than \$50,000, 7 - Less than \$75,000, 8 - \$75,000 or more, 77 - dont know/not sure, 99 - refused, BLANK - not asked or missing                                                                         |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | INCOME3               | Is your annual household income from all sources: (If respondent refuses at any income level, code ´Refused.´)                                                                              | 2 (2021,2022)                                                            | 1 - less than \$10,000; 2- less than \$15,000; 3 - less than \$20, 00-, 4 - Less than \$25,000, 5 - Less than \$35,000, 6 - Less than \$50,000, 7 - Less than \$75,000, 8 - Less than \$100,000, 9 - Less than 150,000, 10 - Less than 200,000, 11 - 200,000 or more, 77 - dont know/not sure, 99 - refused, BLANK - not asked or missing |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | MARITAL STATUS\       | MARITAL                                                                                                                                                                                     | Are you: (marital status)                                                | 7                                                                                                                                                                                                                                                                                                                                         | 1 - married, 2- divorced, 3-widowed, 4-seperated, 5-never married, 6- a member of an unmarried couple, 9-refused, BLANK - not asked or missing                                                                                                                                                                                    |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | EDUCATION             | EDUCA                                                                                                                                                                                       | What is the highest grade or year of school you completed?               | 7                                                                                                                                                                                                                                                                                                                                         | 1- never attended school or only kindergarten, 2- grades 1 through 8 (elementary), 3- grades 9 through 11 (some high school), 4- grade 12 or GED (high school graduate), 5- college 1 year to 3 years (some college or technical school), 6- College 4 yars or more (college graduate), 9 - refused, BLANK - not asked or missing |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | SELF REPORTED HEALTH\ | GENHLTH                                                                                                                                                                                     | Would you say that in general your health is:                            | 7                                                                                                                                                                                                                                                                                                                                         | 1-excellent, 2-very good, 3-good, 4-fair, 5-poor, 7-dont know/not sure, 9-refused, BLANK- not asked or missing                                                                                                                                                                                                                    |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | PHYSHLTH              | Question:  Now thinking about your physical health, which includes physical illness and injury, for how many days during the past 30 days was your physical health not good?                | 7                                                                        | 1-30-number of days, 88-none, 77, dont know/not sure, 99-refused, BLANK-not asked or missing                                                                                                                                                                                                                                              |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | MENTHLTH              | Question:  Now thinking about your mental health, which includes stress, depression, and problems with emotions, for how many days during the past 30 days was your mental health not good? | 7                                                                        | 1-30-number of days, 88-none, 77, dont know/not sure, 99-refused, BLANK-not asked or missing                                                                                                                                                                                                                                              |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | RACE                  | \_IMPRACE                                                                                                                                                                                   | Imputed race/ethnicity value                                             | 7 (2016 has no categories?)                                                                                                                                                                                                                                                                                                               | 1- White, Non-Hispanic, 2-Black, Non-Hispanic, 3-Asian, Non-Hispanic, 4-American Indian/Alaskan Native, Non-Hispanic, 5-Hispanic, 6-Other race, Non-Hispanic                                                                                                                                                                      |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_MRACE1              | Calculated non-Hispanic Race including multiracial                                                                                                                                          | 6 (in 2022 version has \_MRACE2)                                         | 1 - White only, 2- Black or African American only, 3- American Indian or Alaskan Native only, 4 - Asian only, 5 - Native Hawaiian or other Pacific Islander only, 6- Other race only, 7- Multiracial, 77 - Don't know/not sure, 99, Refused, Blank - Missing                                                                              |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_MRACE2              | Same as above                                                                                                                                                                               | 1 (in 2022)                                                              | added 6 - multiracial, 88 - no race choice given, 77, don't know, 99 - refused, blank - missing                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RACEG21             | Create Computed Non-Hispanic Whites/All Others Race Categories Race/Ethnic Group Codes Used In\                                                                                             | 6 (had to change it in 2022 to include new change)                       | 1 - non hispanic white, 2- non white OR hispanic, 9 - dont know/refused                                                                                                                                                                                                                                                                   |                                                                                                                                                                                                                                                                                                                                   |
-|            |                       |                                                                                                                                                                                             |                                                                          |                                                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                                                   |
-|            |                       | Post-Stratification Variable                                                                                                                                                                |                                                                          |                                                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RACEG22             | Same as above                                                                                                                                                                               | 1 (2022)                                                                 | same                                                                                                                                                                                                                                                                                                                                      |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RACEGR3             | Computed 5 level race category.                                                                                                                                                             | 6 (same issue)                                                           | 1 - white only, non hispanic, 2 - black only, non hispanic, 3 - other race only, non hispanic, 4 - multiracial, non hispanic, 5 - hispanic, 9 - dont know/not sure/refused, blank - missing                                                                                                                                               |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RACEGR4             | Same as above                                                                                                                                                                               | 1 (2022)                                                                 |                                                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RACE                | Computed Race-Ethnicity grouping                                                                                                                                                            | 6                                                                        |                                                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RACE1               | Computed Race-Ethnicity grouping                                                                                                                                                            | 1 (2022)                                                                 | 1 - white only, non hispanic, 2 - black only, non hispanic, 3 American Indian or Alaskan Native only, 4 - Asian only, non hispanic, 5 - Native Hawaaina or other pacific islander only, non hospanic, 7 - multiracial, non hispanic, 9 - dont know/not sure/refused                                                                       |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_PRACE1              | Computed Preferred Race                                                                                                                                                                     | 6                                                                        | 1 - white, 2 - black or african american, 3 - American Indian or Alaskan Native, 4 - Asian, 5 - Native Hawaiian or other Pacific Islander, 6 - Other race, 7 - No preferred rracial but prefferred race not answered, 77 - dont know/not sure, 99 - refused                                                                               |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_PRACE2              | Computed Preferred Race                                                                                                                                                                     | 1 (2022)                                                                 | 1 - white, 2 - black or african american, 3 - American Indian or Alaskan Native, 4 - Asian, 5 - Native Hawaiian or other Pacific Islander, 7 - Multiracial but no preferred race, 88 - no race choice given, 77 - dont know/not sure, 99 - refused                                                                                        |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | **HEALTH STATUS**     | \_MENT14D                                                                                                                                                                                   | Computed Mental Health Status. 3 levels: (0 days, 1-13 days, 14-30 days) | 7                                                                                                                                                                                                                                                                                                                                         | 1- zero days when mental health not good, 2 - 1-13 days when mental health not good, 3 - 14+ days when mental health not good, 9 - dont know/refused/missing                                                                                                                                                                      |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RFBING5             | Binge Drinking Calculated Variable                                                                                                                                                          | 6                                                                        | 1 - no, 2 - yes, 9 - dont know refused missing                                                                                                                                                                                                                                                                                            |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|            | \_RFBING6             | Binge Drinking Calculated Variable                                                                                                                                                          | 1                                                                        | 1 - no, 2 - yes, 9 - dont know refused missing                                                                                                                                                                                                                                                                                            |                                                                                                                                                                                                                                                                                                                                   |
-+------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-
-: Summary of Variables in BRFSS
+## Silo 2: CCHS (Canada)
+ 
+*To be added by the CCHS silo team, inside `CAN_Silo/`. Suggested headings, to match the BRFSS section:*
+ 
+- *What the code does*
+- *Requirements*
+- *How to run*
+- *How the files fit together, and what each script does*
+- *Within-silo harmonization (the CCHS across its own survey cycles)*
+- *Between-silo harmonization (the CCHS to the agreed variables)*
+- *Notes*
