@@ -17,14 +17,6 @@
 #   Input:  data/raw/LLCP{year}.XPT (one per year)
 #   Output: data/clean/brfss_clean_{year}.rds (one per year)
 #
-# Notes: *revise! is this actually true? or even is this needed?*
-#   - Only the main LLCP (combined landline + cellphone) files are needed.
-#     Our 6 target states always included the marijuana module on all
-#     questionnaire versions  *revise! is this actually true?*
-#   - Variables that do not exist in a given year (e.g., BIRTHSEX before
-#     2019) are skipped during selection. bind_rows() in 02_clean_append.R
-#     fills those columns with NA. *
-#   - Not all 6 states fielded the marijuana module every year. (explain why this is fine?)
 # =============================================================================
 
 
