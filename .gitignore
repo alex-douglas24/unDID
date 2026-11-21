@@ -1,8 +1,6 @@
 # Data files (too large for GitHub)
-data/raw/*.XPT
-data/raw/*.xpt
-data/clean/*.rds
-data/clean/*.RDS
+**/data/raw/
+**/data/clean/
 
 # R session files
 .Rhistory
@@ -15,5 +13,3 @@ Thumbs.db
 
 # R output
 *.Rout
-data/raw/
-.DS_Store
