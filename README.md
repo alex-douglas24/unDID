@@ -81,6 +81,18 @@ Variables with more than two categories (`ageg6`, `hh_inc`, `health5`, and `educ
  
 The BRFSS silo is six US states pooled into one silo named `USA`, 2016 to 2022. It is the untreated (control) silo. All the scripts for this section are inside `US_Silo/`. 
  
+
+ ### Requirements
+| | |
+|---|---|
+| Software | R 4.4.1 |
+| Packages | `here` 1.0.2, `haven` 2.5.5, `dplyr` 1.2.0, `tidyr` 1.3.1, `purrr` 1.2.1, `undidR` 3.0.2 |
+| Run on | macOS 15.6.1, Apple silicon |
+| Disk space | about 570 MB for the raw BRFSS files |
+| Run time | Part 1 about 3 minutes, Part 2 about 15 seconds, appendix under 30 seconds |
+ 
+Each script checks for the packages it needs and stops with a message that lists any that are missing. The project folder is found with `here::here()`, which uses the empty file `US_Silo/.here` to know where the silo's top folder is.
+
 ### What the code does
  
 | Part | What it does |
@@ -92,16 +104,7 @@ The BRFSS silo is six US states pooled into one silo named `USA`, 2016 to 2022. 
 <p>
 
 
-### Requirements
-| | |
-|---|---|
-| Software | R 4.4.1 |
-| Packages | `here` 1.0.2, `haven` 2.5.5, `dplyr` 1.2.0, `tidyr` 1.3.1, `purrr` 1.2.1, `undidR` 3.0.2 |
-| Run on | macOS 15.6.1, Apple silicon |
-| Disk space | about 570 MB for the raw BRFSS files |
-| Run time | Part 1 about 3 minutes, Part 2 about 15 seconds, appendix under 30 seconds |
- 
-Each script checks for the packages it needs and stops with a message that lists any that are missing. The project folder is found with `here::here()`, which uses the empty file `US_Silo/.here` to know where the silo's top folder is.
+
 
 <br>
 
@@ -152,23 +155,6 @@ R CMD BATCH part2_run_all.R
  
 <br>
 
-**Optional: the missingness tables.**
- 
-```bash
-cd US_Silo/appendix
-R CMD BATCH missingness_tables.R
-```
- 
-**What you should get**
- 
-| Check | Result |
-|---|---|
-| Respondents after combining the 7 years | 304,897 |
-| Respondents asked the cannabis questions | 215,325 |
-| Analysis sample (no missing values) | 178,183 |
-| Common adoption estimate, without covariates | 0.0286 |
-| Common adoption estimate, with covariates | 0.0314 |
-
 
 ### What each script does
  
@@ -187,6 +173,17 @@ In the order they run. `run_all` scripts check the packages and the project fold
 | `appendix/to_review.r` | Old figure code kept for review. Nothing runs it | |
  
 Each script describes what it does, what inputs and outputs should be and how the file runs. This also saves a log of the run as `part1_run_all.Rout`.
+
+
+**What you should get**
+ 
+| Check | Result |
+|---|---|
+| Respondents after combining the 7 years | 304,897 |
+| Respondents asked the cannabis questions | 215,325 |
+| Analysis sample (no missing values) | 178,183 |
+| Common adoption estimate, without covariates | 0.0286 |
+| Common adoption estimate, with covariates | 0.0314 |
 
 <br>
 <br>
