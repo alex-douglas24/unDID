@@ -1,5 +1,5 @@
 # =============================================================================
-# part2_main.R: Part 2 controller script. Prepare the silo data and run undidR
+# part2_run_all.R: Part 2 controller script. Prepare the silo data and run undidR
 #               stage two 
 #
 # WHAT IT DOES
@@ -46,14 +46,26 @@
 #   - Install the R packages checked below.
 # =============================================================================
 
-
 # --- Required packages ---------------------------------------------------------
-# Stops if a package is missing. Tested with R 4.4.1 and undidR 3.0.2.
-required_packages <- c("here", "dplyr", "undidR")
+# List every package the project needs, install any that are
+# missing, then check they are all there before going on.
+# In this project the same six packages as part1_run_all.R, so whichever script
+# runs first installs everything. Tested with R 4.4.1 and undidR 3.0.2.
+required_packages <- c("here", "haven", "dplyr", "tidyr", "purrr", "undidR")
 missing_packages  <- setdiff(required_packages, rownames(installed.packages()))
 
 if (length(missing_packages) > 0) {
-  stop("Please install these R packages, then run part2_main.R again: ", paste(missing_packages, collapse = ", "))
+  cat("Installing missing packages:",
+      paste(missing_packages, collapse = ", "), "\n")
+  install.packages(missing_packages, repos = "https://cloud.r-project.org")
+}
+
+# CHECK 1: PACKAGE ERROR: script will stop if an install failed.
+still_missing <- setdiff(required_packages, rownames(installed.packages()))
+if (length(still_missing) > 0) {
+  stop("These R packages could not be installed: ",
+       paste(still_missing, collapse = ", "),
+       ". Install them by hand, then run part2_run_all.R again.")
 }
 
 library(dplyr)

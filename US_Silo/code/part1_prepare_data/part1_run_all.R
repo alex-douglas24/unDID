@@ -17,7 +17,6 @@
 #      (see data/raw/README.md for where to download them).
 #               These files can be downloaded here: https://www.cdc.gov/brfss/annual_data/annual_data.htm
 #               (Click on the year, then download the SAS Transport file for that year)
-#   2. Install the R packages listed under "Required packages" below.
 #
 # HOW TO RUN **is there an easier way to explain this cuz like yes according to the guide this is true but hard ish, maybe clarify in readme**
 #   Nothing needs to be edited by hand. Open a terminal and run:
@@ -34,15 +33,29 @@
 # =============================================================================
 
 
+
 # --- Required packages ---------------------------------------------------------
-# CHECK 1: PACKAGE ERROR: script will stop if a package is missing.
-required_packages <- c("here", "haven", "dplyr")
+# List every package the project needs, install any that are
+# missing, then check they are all there before going on.
+# In this project all six packages are needed across Part 1 and Part 2, so the
+# same list is used in both run_all scripts and the first one to run installs
+# everything.
+required_packages <- c("here", "haven", "dplyr", "tidyr", "purrr", "undidR")
 missing_packages  <- setdiff(required_packages,
                              rownames(installed.packages()))
 
 if (length(missing_packages) > 0) {
-  stop("Please install these R packages, then run part1_main.R again: ",
-       paste(missing_packages, collapse = ", "))
+  cat("Installing missing packages:",
+      paste(missing_packages, collapse = ", "), "\n")
+  install.packages(missing_packages, repos = "https://cloud.r-project.org")
+}
+
+# CHECK 1: PACKAGE ERROR: script will stop if an install failed.
+still_missing <- setdiff(required_packages, rownames(installed.packages()))
+if (length(still_missing) > 0) {
+  stop("These R packages could not be installed: ",
+       paste(still_missing, collapse = ", "),
+       ". Install them by hand, then run part1_run_all.R again.")
 }
 
 

@@ -110,7 +110,19 @@ Each script checks for the packages it needs and stops with a message that lists
 
 ### How to run
  
-**Step 1: Download the BRFSS files.** Download the annual BRFSS data from the CDC: <https://www.cdc.gov/brfss/annual_data/annual_data.htm>. Click each year, then download the **SAS Transport file** for that year. Save the files in `US_Silo/data/raw/`. You do not need to rename them, because the code finds each year's file by its year, even if the CDC filename has a trailing space.
+**Step 1: Download the BRFSS files.** Download the annual BRFSS data from the CDC: <https://www.cdc.gov/brfss/annual_data/annual_data.htm>. Click each year, then download the **SAS Transport file** for that year. Each year will download as a .ZIP file. Open each year and drag the LCCP.YEAR.XPT files into `US_Silo/data/raw/`. You do not need to rename them, because the code finds each year's file by its year, even if the CDC filename has a trailing space.
+
+
+** redo this with the open files cuz they are the wrong size 
+
+** also add raw data folder 
+
+** figure out how to do it on normal terminal? maybe can never run on terminal cuz no R installed? do u need R studio or VS studio code? check reporcudcabiltiy guide, need to have R dowblaoded on VS code
+
+** need to have R studio donwloaded so gotta reference cran or somethere somewhere for the doanlod link for r 
+
+
+
 
 | Year | File size |
 |---|---|
