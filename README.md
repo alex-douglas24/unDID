@@ -77,7 +77,7 @@ Variables with more than two categories (`ageg6`, `hh_inc`, `health5`, and `educ
 <br>
 
 
-## Silo 1: BRFSS (US)
+## Silo A: BRFSS (US)
  
 The BRFSS silo is six US states pooled into one silo named `USA`, 2016 to 2022. It is the untreated (control) silo. All the scripts for this section are inside `US_Silo/`. 
  
@@ -264,7 +264,7 @@ Part 2 removes 37,142 respondents with a missing value on the outcome or a covar
 <br>
 <br>
 
-## Silo 2: CCHS (Canada)
+## Silo B: CCHS (Canada)
  
 *To be added by the CCHS silo team, inside `CAN_Silo/`. Suggested headings, to match the BRFSS section:*
  
