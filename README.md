@@ -8,7 +8,7 @@ To demonstrate the use of the package the example of cannabis legalization on us
  
 ## UndidR: General Overview
 
-![The three stages of UN-DID general](appendix/UNDIDgeneral_overview.png)
+![The three stages of UN-DID general](docs/images/undid_stages.png)
  
 *Figure 1. UndidR overview from (<https://ebjamieson97.github.io/undidR/>). Note the diagram calls Central the "Server".*
 Only summary files move between silos, never the survey data.
@@ -28,7 +28,7 @@ UN-DID lets several groups estimate one difference-in-differences effect without
 
 ---
 ## UndidR: Example Overview 
-![The three stages of UN-DID example](appendix/UNDIDexample_overview.png)
+![The three stages of UN-DID example](docs/images/project_overview.png)
 *Figure 2. UndidR example overview adapted from (<https://ebjamieson97.github.io/undidR/>). Note the diagram calls Central the "Server".*
 
 This paper aims to answer the question if  Canada's legalization of recreational cannabis on 17 October 2018 change the share of people who used cannabis in the past 30 days? There are two silos in this project. Canada as the treated silo using data from the CCHS, while 6 states in the US that did not legalize marijuana are pooled into one control silo. Seeing as the two surveys cannot be combined into one dataset, undidR is needed. 
