@@ -229,7 +229,6 @@ The full counts are in `appendix/tables/module_coverage.csv`.
 | Cannabis days | `MARIJANA` (2016-17), `MARIJAN1` (2018-22) |
 | Sex (primary) | `SEX` (2016-17), `SEX1` (2018), `_SEX` (2019-22) |
 | Sex (reported) | `SEX` (2016-17), `SEX1` (2018), `SEXVAR` (2019-22) |
-| Birth sex | not collected (2016-18), `BIRTHSEX` (2019-22) |
 | Income | `INCOME2` (2016-20, 8 categories), `INCOME3` (2021-22, 11 categories) |
 | Race, preferred | `_PRACE1` (2016-21), `_PRACE2` (2022) |
 | Race, multi | `_MRACE1` (2016-21), `_MRACE2` (2022) |
@@ -237,9 +236,6 @@ The full counts are in `appendix/tables/module_coverage.csv`.
 | Race, 5-level | `_RACEGR3` (2016-21), `_RACEGR4` (2022) |
 | Race, detailed | `_RACE` (2016-21), `_RACE1` (2022) |
  
- **update post meeting with Kwasi**
-
-A variable that does not exist in a given year (for example `BIRTHSEX` before 2019) is skipped when that year is read, and filled with missing values when the years are stacked. All of these decision are documented in each script. 
 
 <br>
 

@@ -94,28 +94,20 @@ state_labels <- c(
 years <- 2016:2022
 
 
-#** this is what you need to write about in the guide
-
 # --- Within Silo variable names harmonization by year--------------------------
 # BRFSS renames some variables across survey years. This takes the column names in the .XPT files 
-# and renames them to a standardized name. See README files for more details on within silo variable name changes. 
+# and renames them to a standardized name.  
 # How it works:
 #   names(config)  = column names as they appear in the .XPT for that year
 #   values(config) = standardized column names used in the analysis dataset
-##*REVISE does this actually make sense** 
-# find a way to make it clear that this is like within silo variable name changes, not across silo variable name changes! 
 # Example: setNames("marijuana_days", "MARIJANA") will find the column called MARIJANA  and rename it to marijuana_days.
 #   "MARIJANA" = "marijuana_days"
-# Variables that do not exist in a given year (e.g., BIRTHSEX before 2019)
-# are handled after: the "available" check in 01_extract_harmonize.R
+# Variables that do not exist in a given year are handled after: the "available" check in 01_extract_harmonize.R
 # skips them, and bind_rows() in 02_clean_append.R fills them with NA.
-#*create a table for within silo variable name changes across years?*
 # Variable name changes across the BRFSS 2016-2022:
 #   Cannabis:       MARIJANA (2016-17) -> MARIJAN1 (2018-22)
-#   Binge drinking: _RFBING5 (2016-21) -> _RFBING6 (2022)
 #   Sex (primary):  SEX (2016-17) -> SEX1 (2018) -> _SEX (2019-22)
 #   Sex (reported): SEX (2016-17) -> SEX1 (2018) -> SEXVAR (2019-22)
-#   Birth sex:      not collected (2016-18) -> BIRTHSEX (2019-22)
 #   Income:         INCOME2 (2016-20, 8 categories) -> INCOME3 (2021-22, 11 categories)
 #   Race preferred: _PRACE1 (2016-21) -> _PRACE2 (2022)
 #   Race multi:     _MRACE1 (2016-21) -> _MRACE2 (2022)
@@ -128,9 +120,6 @@ get_year_config <- function(yr) {
   # --- Year-varying names ----------------------------------
   # Cannabis (outcome)
   mj_var <- if (yr <= 2017) "MARIJANA" else "MARIJAN1"
-  
-  # Binge drinking
-  binge_var <- if (yr <= 2021) "_RFBING5" else "_RFBING6"
   
   # Income
   income_var <- if (yr <= 2020) "INCOME2" else "INCOME3"
@@ -170,7 +159,6 @@ get_year_config <- function(yr) {
     # ---- SEX 
     setNames("sex",              sex_primary),    # harmonized across all years
     setNames("sex_reported",     sex_reported),   # respondent-reported
-    setNames("birthsex",         "BIRTHSEX"),     # 2019-22 only; NA for earlier
     
     # ---- INCOME 
     # INCOME2 (2016-20): 8 categories, top = "$75,000 or more
@@ -185,18 +173,8 @@ get_year_config <- function(yr) {
     #   3 = some post-secondary (EDUCA 5), post-secondary/university diploma (EDUCA 6)
     setNames("education_raw",    "EDUCA"),
     
-    # ---- MARITAL STATUS
-    setNames("marital",          "MARITAL"),
-    
-    # ---- EMPLOYMENT 
-    setNames("employment",       "EMPLOY1"),
-    
     # ---- HEALTH 
     setNames("general_health",   "GENHLTH"),      # 5-level self-rated
-    setNames("health_status",    "_RFHLTH"),      # binary good vs fair/poor
-    setNames("physical_health",  "PHYSHLTH"),     # days physical health not good
-    setNames("mental_health_d",  "MENTHLTH"),     # days mental health not good
-    setNames("mental_health_3",  "_MENT14D"),     # computed 3-level
     
     # ---- RACE/ETHNICITY 
     setNames("race_imputed",     "_IMPRACE"),     # imputed race/ethnicity
@@ -206,8 +184,6 @@ get_year_config <- function(yr) {
     setNames("race_detailed",    race_var),       # detailed race/ethnicity
     setNames("race_preferred",   prace_var),      # preferred race
     
-    # ---- OTHER VARIABLES 
-    setNames("binge_drink",      binge_var)       # binary binge drinking
   )
   
   return(config)
