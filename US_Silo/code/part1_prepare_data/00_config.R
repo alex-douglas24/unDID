@@ -165,10 +165,7 @@ get_year_config <- function(yr) {
     setNames("marijuana_days",   mj_var),
     
     # ---- AGE
-    setNames("age_5yr",          "_AGEG5YR"),    # 14-level 5-year groups
     setNames("age_6grp",         "_AGE_G"),       # 6 imputed age groups
-    setNames("age_2grp",         "_AGE65YR"),     # 2-level: 18-64 vs 65+
-    setNames("age_imputed",      "_AGE80"),        # imputed age collapsed at 80
     
     # ---- SEX 
     setNames("sex",              sex_primary),    # harmonized across all years
@@ -182,14 +179,11 @@ get_year_config <- function(yr) {
     
     # ---- EDUCATION 
     # EDUCA: raw 6-level (1=never attended through 6=college grad)
-    # Will be recoded to 4 categories in 02_clean_append.R to match CCHS:
+    # Will be recoded to 3 categories in 02_clean_append.R to match CCHS:
     #   1 = less than secondary (EDUCA 1-3)
     #   2 = secondary graduate (EDUCA 4)
-    #   3 = some post-secondary (EDUCA 5)
-    #   4 = post-secondary/university diploma (EDUCA 6)
-    # _EDUCAG: BRFSS-computed 4-level (kept for reference)
+    #   3 = some post-secondary (EDUCA 5), post-secondary/university diploma (EDUCA 6)
     setNames("education_raw",    "EDUCA"),
-    setNames("education_4cat",   "_EDUCAG"),
     
     # ---- MARITAL STATUS
     setNames("marital",          "MARITAL"),

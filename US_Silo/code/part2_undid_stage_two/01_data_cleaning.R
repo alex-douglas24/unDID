@@ -124,12 +124,12 @@ undid_covariates <- c("female", "minority", "ageg6", "educ", "hh_inc", "health5"
 
 n_before <- nrow(brfss)
  
-for (v in c("use30", undid_covariates)) {
+for (v in c("marijuana_days_clean", undid_covariates)) {
   n_missing <- sum(is.na(brfss[[v]]))
   cat(sprintf("  missing %-10s %7d\n", paste0(v, ":"), n_missing))
 }
  
-brfss <- brfss[stats::complete.cases(brfss[, c("use30", undid_covariates)]), ]
+brfss <- brfss[stats::complete.cases(brfss[, c("marijuana_days_clean", undid_covariates)]), ]
  
 cat("\nDropped", n_before - nrow(brfss), "rows with missing outcome/covariates\n")
 cat("Analysis sample:", nrow(brfss), "obs\n\n")
@@ -164,10 +164,8 @@ cat(paste(undid_covariates, collapse = ";"), "\n\n")
  
  
 # --- (f) The outcome -----------------------------------------------------------
-# In this project: the outcome is use30, made in 02_clean_append.R. It is 1 if
-# the respondent used cannabis on at least one of the past 30 days, and 0 if on
-# none. **revise** ensure this is also correct didn't think it was a binary variable but a count of days used?
-# do you even need this check? its not above 
+# In this project: the outcome is marijuana_days_clean, made in 02_clean_append.R.
+# It is the number of days of cannabis use in the past 30 days (0 to 30).
 
 # --- Check the data against the received files ---------------------------------
 # Before running stage two, check that the data matches what central sent.
@@ -206,7 +204,7 @@ cat("\n")
 # text, and no variable used in the analysis can have a missing value.
 stopifnot(is.character(brfss$year), is.character(brfss$silo_name))
 
-if (anyNA(brfss[, c("year", "silo_name", "use30", undid_covariates)])) {
+if (anyNA(brfss[, c("year", "silo_name", "marijuana_days_clean", undid_covariates)])) {
   stop("Missing values remain in a variable used in the analysis.")
 }
 
@@ -241,7 +239,7 @@ cat("\n")
 # state and finalwt (the BRFSS sampling weight) are kept, but undid_stage_two()
 # doesn't use sampling weights, so they are not used in stage two. **explain the diff thing here?? vs other weight??**
 undid_input <- brfss %>%
-  select(year, silo_name, use30, state, finalwt, all_of(undid_covariates))
+  select(year, silo_name, marijuana_days_clean, state, finalwt, all_of(undid_covariates))
 undid_path <- file.path(clean_dir, "brfss_undid_input.rds")
 saveRDS(undid_input, undid_path)
 

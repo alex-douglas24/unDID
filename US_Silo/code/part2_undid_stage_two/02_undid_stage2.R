@@ -39,7 +39,7 @@ stage2 <- undid_stage_two(
   silo_name           = silo_name,
   silo_df             = undid_input,
   time_column         = "year",
-  outcome_column      = "use30",
+  outcome_column      = "marijuana_days_clean",
   silo_date_format    = "yyyy",
   filepath            = common_dir
 )
@@ -68,7 +68,7 @@ stage2_stag <- undid_stage_two(
   silo_name           = silo_name,
   silo_df             = undid_input,
   time_column         = "year",
-  outcome_column      = "use30",
+  outcome_column      = "marijuana_days_clean",
   silo_date_format    = "yyyy",
   filepath            = stag_dir
 )

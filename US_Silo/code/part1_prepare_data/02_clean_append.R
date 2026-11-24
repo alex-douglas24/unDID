@@ -88,24 +88,6 @@ brfss <- brfss %>%
       marijuana_days >= 1 & marijuana_days <= 30  ~ marijuana_days,
       TRUE                                        ~ NA_real_
     ),
-    # Binary: any use in past 30 days (1 = yes, 0 = no)
-    use30 = case_when(
-      marijuana_days_clean >= 1              ~ 1,
-      marijuana_days_clean == 0              ~ 0,
-      TRUE                                   ~ NA_real_
-    ),
-    # High use: 25+ days in past 30 (1 = yes, 0 = no)
-    mj_high = case_when(
-      marijuana_days_clean >= 25             ~ 1,
-      !is.na(marijuana_days_clean)           ~ 0,
-      TRUE                                   ~ NA_real_
-    ),
-    # Moderate use: 1-24 days in past 30 (1 = yes, 0 = no)
-    mj_mod = case_when(
-      marijuana_days_clean >= 1 & marijuana_days_clean < 25 ~ 1,
-      !is.na(marijuana_days_clean)                          ~ 0,
-      TRUE                                                  ~ NA_real_
-    ),
     
     # ---- SEX ----
     # Coding consistent across years: 1 = Male, 2 = Female
@@ -115,15 +97,13 @@ brfss <- brfss %>%
     birthsex     = ifelse(birthsex %in% c(7, 9), NA, birthsex),
     
     # ---- AGE ----
-    # _AGEG5YR: 14 = DK/Refused -> NA
-    age_5yr  = ifelse(age_5yr == 14, NA, age_5yr),
-    # _AGE65YR: 3 = DK/Refused -> NA
-    age_2grp = ifelse(age_2grp == 3, NA, age_2grp),
-    # _AGE_G and _AGE80: no special missing codes
+    # age_6grp (_AGE_G): 6 imputed age groups, so there are no "don't know" or
+    # "refused" codes to clean. It is the only age variable kept.
     
     # ---- EDUCATION (raw 6-level) ----
     # 9 = refused -> NA
     education_raw = ifelse(education_raw == 9, NA, education_raw),
+
     
     # ---- EDUCATION (recoded to 4 categories for CCHS harmonization) ---- *revise* should this be in line with unDID unfilled step 1??
     # Not used in the undidR analysis: 04_undid_prep.R builds its own
