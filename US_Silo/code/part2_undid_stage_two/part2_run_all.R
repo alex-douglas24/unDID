@@ -20,7 +20,7 @@
 # 
 #
 # INPUT/OUTPUT
-#   Input:  data/clean/brfss_analysis_2016_2022.rds           from Part 1
+#   Input:  data/clean/brfss_harmonized.rds           from Part 1
 #           data/undid/common_adoption/empty_diff_df.csv      from Central
 #           data/undid/staggered_adoption/empty_diff_df.csv   from Central
 #   Output: data/clean/brfss_undid_input.rds                  the undidR input data
@@ -39,7 +39,7 @@
 #   Or open this file in RStudio or VS Code and source it.
 #
 # BEFORE RUNNING
-#   - Part 1 must have run, so that data/clean/brfss_analysis_2016_2022.rds exists.
+#   - Part 1 must have run, so that data/clean/brfss_harmonized.rds exists.
 #   - The empty_diff_df.csv files from the CCHS silo must be saved in
 #     data/undid/common_adoption/ (common adoption) and
 #     data/undid/staggered_adoption/ (staggered adoption).
@@ -99,8 +99,8 @@ common_file <- file.path(common_dir, "empty_diff_df.csv")
 stag_file   <- file.path(stag_dir,   "empty_diff_df.csv")
 
 # CHECK 3: INPUT FILE ERROR: script will stop if the input file is not in place.
-if (!file.exists(file.path(clean_dir, "brfss_analysis_2016_2022.rds"))) {
-  stop("Missing data/clean/brfss_analysis_2016_2022.rds. Run Part 1 first.")
+if (!file.exists(file.path(clean_dir, "brfss_harmonized.rds"))) {
+  stop("Missing data/clean/brfss_harmonized.rds. Run Part 1 first.")
 }
 
 

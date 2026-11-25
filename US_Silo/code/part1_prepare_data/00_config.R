@@ -8,28 +8,27 @@
 #   as some of them change between years. This script also loads the needed packages.
 #
 # BEFORE RUNNING
-#   main.R must have set root_dir (the top folder of the repository).
+#   part1_run_all.R must have set root_dir (the top folder of the repository).
 #  
 # HOW TO RUN
-#   This script is not run on its own. main.R runs it first to set up the environment for 
+#   This script is not run on its own. part1_run_all.R runs it first to set up the environment for 
 #   the other scripts to pull the correct folders and use the correct variable names.
 # 
-# INPUT/OUTPUT *revise*
-#   This script does not create any data files. It will create the data/raw, data/clean and 
-#   output folders if they are missing. 
+# INPUT/OUTPUT 
+#   This script does not create any data files. It creates the data/raw and data/clean folders if they are missing.
 # =============================================================================
 
 
 
 # --- Packages -----------------------------------------------------------------
-# main.R checks that these are installed before running this file.
+# part1_run_all.R checks that these are installed before running this file.
 library(haven)
 library(dplyr)
 
 
 
 # --- Folders ------------------------------------------------------------------
-# root_dir (the top folder of the repository) is set in main.R.
+# root_dir (the top folder of the repository) is set in part1_run_all.R.
 #   raw_dir    raw BRFSS .XPT files, downloaded by the user (not in the repo)
 #   clean_dir  cleaned data and undidR files created by the scripts
  
@@ -68,9 +67,8 @@ find_xpt <- function(yr, dir = raw_dir) {
 
 # --- Target states (FIPS codes) -----------------------------------------------
 # These 6 US states will act as the control group They are pooled into one silo in 
-# 04_undid_prep.R. Note: not every state asked the cannabis questions in every year. 
-# The tables in output/module_coverage.csv show which years each state is in. *REVIEW*
- 
+# Part 2 (01_data_cleaning.R) Note: not every state asked the cannabis questions in every year, see README for details. 
+
 target_states <- c(
   16,  # Idaho
   27,  # Minnesota
@@ -106,7 +104,6 @@ years <- 2016:2022
 # skips them, and bind_rows() in 02_clean_append.R fills them with NA.
 # Variable name changes across the BRFSS 2016-2022:
 #   Cannabis:       MARIJANA (2016-17) -> MARIJAN1 (2018-22)
-#   Sex (primary):  SEX (2016-17) -> SEX1 (2018) -> _SEX (2019-22)
 #   Sex (reported): SEX (2016-17) -> SEX1 (2018) -> SEXVAR (2019-22)
 #   Income:         INCOME2 (2016-20, 8 categories) -> INCOME3 (2021-22, 11 categories)
 #   Race preferred: _PRACE1 (2016-21) -> _PRACE2 (2022)
@@ -123,12 +120,6 @@ get_year_config <- function(yr) {
   
   # Income
   income_var <- if (yr <= 2020) "INCOME2" else "INCOME3"
-  
-  # Sex: BRFSS calculated variable (_SEX available 2019+; for earlier years,
-  # the closest equivalent is the raw respondent sex variable)
-  if (yr <= 2017)      { sex_primary <- "SEX" }
-  else if (yr == 2018) { sex_primary <- "SEX1" }
-  else                 { sex_primary <- "_SEX" }
   
   # Sex: respondent-reported (changes name each period)
   if (yr <= 2017)      { sex_reported <- "SEX" }
@@ -157,7 +148,6 @@ get_year_config <- function(yr) {
     setNames("age_6grp",         "_AGE_G"),       # 6 imputed age groups
     
     # ---- SEX 
-    setNames("sex",              sex_primary),    # harmonized across all years
     setNames("sex_reported",     sex_reported),   # respondent-reported
     
     # ---- INCOME 
@@ -166,11 +156,9 @@ get_year_config <- function(yr) {
     setNames("income_raw",       income_var),
     
     # ---- EDUCATION 
-    # EDUCA: raw 6-level (1=never attended through 6=college grad)
-    # Will be recoded to 3 categories in 02_clean_append.R to match CCHS:
-    #   1 = less than secondary (EDUCA 1-3)
-    #   2 = secondary graduate (EDUCA 4)
-    #   3 = some post-secondary (EDUCA 5), post-secondary/university diploma (EDUCA 6)
+    # EDUCA: raw 6-level (1 = never attended through 6 = college 4+ years).
+    # Kept in its original form here. It is collapsed to 3 categories in
+    # Part 2 (01_data_cleaning.R) for the harmonized case. 
     setNames("education_raw",    "EDUCA"),
     
     # ---- HEALTH 
@@ -182,7 +170,7 @@ get_year_config <- function(yr) {
     setNames("race_binary_wh",   raceg2_var),     # binary: white NH vs other
     setNames("race_5level",      racegr3_var),    # 5-level race/ethnicity
     setNames("race_detailed",    race_var),       # detailed race/ethnicity
-    setNames("race_preferred",   prace_var),      # preferred race
+    setNames("race_preferred",   prace_var)      # preferred race
     
   )
   

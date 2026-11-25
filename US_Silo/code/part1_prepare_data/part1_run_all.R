@@ -1,16 +1,13 @@
 # =============================================================================
-# part1_main.R: Part 1 controller script for the BRFSS silo (US control states
-#               2016-2022)
+# part1_run_all.R: Part 1 controller script for the BRFSS silo (US control states 2016-2022)
 #
 # WHAT IT DOES
 #   Runs Part 1 of the pipeline, from the raw BRFSS files to one cleaned BRFSS
 #   dataset:
-#   00 settings > 01 extract > 02 clean and append
+#   00 settings > 01 extract > 02 clean and append > 03 harmonize > save one cleaned dataset
 #   Part 1 does not need anything from Central, so it can be run first. Part 2
 #   (code/part2_undid_stage_two) then prepares this dataset for undidR once
 #   you get Central's empty_diff_df.csv file. 
-#   Note: the missingness tables are not part of this pipeline. They are in the
-#   appendix/ folder and are run on their own.
 #
 # BEFORE RUNNING
 #   1. Put the raw BRFSS files LLCP2016.XPT ... LLCP2022.XPT in data/raw/
@@ -18,11 +15,11 @@
 #               These files can be downloaded here: https://www.cdc.gov/brfss/annual_data/annual_data.htm
 #               (Click on the year, then download the SAS Transport file for that year)
 #
-# HOW TO RUN **is there an easier way to explain this cuz like yes according to the guide this is true but hard ish, maybe clarify in readme**
+# HOW TO RUN ** REVISE ACCORDING TO README) 
 #   Nothing needs to be edited by hand. Open a terminal and run:
 #     cd <path to this repository>/code/part1_prepare_data
-#     R CMD BATCH part1_main.R
-#   This also saves a log of the run as part1_main.Rout.
+#     R CMD BATCH part1_run_all.R
+#   This also saves a log of the run as part1_run_all.Rout.
 #   Or open this file in RStudio or VS Code and source it. It will run all the
 #   component scripts in order for part 1. 
 #
@@ -70,11 +67,11 @@ root_dir  <- here::here()
 part1_dir <- file.path(root_dir, "code", "part1_prepare_data")
 
 # CHECK 2: PROJECT FOLDER ERROR: script will stop if the code folder isn't where
-# it's expected. This can happen if you run part1_main.R from the wrong folder
+# it's expected. This can happen if you run part1_run_all.R from the wrong folder
 # or move the repo!
 if (!file.exists(file.path(part1_dir, "00_config.R"))) {
   stop("Could not find code/part1_prepare_data/00_config.R under ", root_dir,
-       ". Run part1_main.R from inside the repository, and keep its original ",
+       ". Run part1_run_all.R from inside the repository, and keep its original ",
        "folder layout (code/, data/, appendix/).")
 }
 
@@ -92,6 +89,8 @@ source(file.path(part1_dir, "01_extract_harmonize.R"), echo = TRUE)
 # 02: Clean non-response codes, create derived variables, stack all years
 source(file.path(part1_dir, "02_clean_append.R"), echo = TRUE)
 
+# 03: Recode to match the CCHS (female, minority, educ)
+source(file.path(part1_dir, "03_harmonize.R"), echo = TRUE)
 
 # --- Record the computing environment -----------------------------------------
 # Printing the session info puts the R version and package versions in the log.

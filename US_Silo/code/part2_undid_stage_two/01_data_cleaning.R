@@ -28,75 +28,23 @@
 brfss <- readRDS(file.path(clean_dir, "brfss_analysis_2016_2022.rds"))
 cat("Loaded analysis dataset:", nrow(brfss), "obs\n\n")
 
-
-# --- (a) Recode to the variable names and coding agreed with Central  ------------
-# names and coding must match what was agreed with Central. In this example the six 
-# agreed covariates are female, minority, ageg6, educ, hh_inc and health5. **revise**
-# Each one is made from a BRFSS variables cleaned in Part 1. 
-#   female    <- sex_reported    (1 = male, 2 = female, recoded to 0/1)
-#   ageg6     <- age_6grp        (_AGE_G, 6 imputed age groups; no recode)
-#   educ      <- education_raw   (EDUCA, 6 levels collapsed to 3: less than
-#                                 secondary, secondary graduate, any
-#                                 post-secondary) ### *REVISE* DOUBLE CHECK THIS PLEASE!!! 
-#   hh_inc    <- income_8cat     (already collapsed to 8 categories in
-#                                 02_clean_append.R)
-#   health5   <- general_health  (GENHLTH, 1 to 5; "don't know" and "refused"
-#                                 already set to NA in 02_clean_append.R)
-#   minority  <- race_binary_wh  (_RACEG21: 1 = non-Hispanic white,
-#                                 2 = non-white or Hispanic, recoded to 0/1)*REVISE* old one i think? 
-cat("Applying harmonization recodes...\n")
-
+# --- (a) Rename to the variable names agreed with Central ----------------------
+# Names must match what was agreed with Central. Female, minority and educ were made 
+# in 03_harmonize.R and already have their agreed names. The other three only need renaming:
+#   ageg6    <- age_6grp       (_AGE_G, 6 imputed age groups)
+#   hh_inc   <- income_8cat    (8 categories, made in 02_clean_append.R)
+#   health5  <- general_health (GENHLTH, 1 to 5)
+cat("Renaming to the agreed names...\n")
 
 brfss <- brfss %>%
   mutate(
- 
-    # ---- FEMALE (harmonized to CCHS coding) ----
-    # BRFSS sex_reported: 1 = male, 2 = female. CCHS uses a 0/1 female binary.
-    # Recode 1 -> 0, 2 -> 1, all other values -> NA.
-    female = case_when(
-      sex_reported == 1 ~ 0,
-      sex_reported == 2 ~ 1,
-      TRUE              ~ NA_real_
-    ),
- 
-    # ---- MINORITY (harmonized to CCHS coding) ----
-    # BRFSS race_binary_wh (_RACEG21): 1 = non-Hispanic white, 2 = non-white
-    # or Hispanic. CCHS uses a binary variable for visible minorities.
-    # Recode 1 -> 0, 2 -> 1, all other values -> NA.
-    minority = case_when(
-      race_binary_wh == 1 ~ 0,
-      race_binary_wh == 2 ~ 1,
-      TRUE                ~ NA_real_
-    ),
- 
-    # ---- AGE GROUP (agreed name, no recode) ----
-    # age_6grp (_AGE_G): 6 imputed age groups, increasing. Cut points already
-    # match the CCHS agreed scheme.
-    ageg6 = age_6grp,
- 
-    # ---- EDUCATION (collapsed to the agreed 3 categories, increasing) ----
-    # EDUCA: 1 = never attended / kindergarten only, 2 = grades 1-8,
-    # 3 = grades 9-11, 4 = grade 12 or GED, 5 = college 1-3 years,
-    # 6 = college 4+ years.
-    educ = case_when(
-      education_raw %in% 1:3 ~ 1,   # less than secondary
-      education_raw == 4     ~ 2,   # graduated secondary
-      education_raw %in% 5:6 ~ 3,   # any post-secondary
-      TRUE                   ~ NA_real_
-    ),
- 
-    # ---- HOUSEHOLD INCOME (agreed name, no recode) ----
-    # income_8cat: already collapsed to 8 increasing categories in
-    # 02_clean_append.R, top category 75k+. Matches the CCHS scheme as-is.
-    hh_inc = income_8cat,
- 
-    # ---- GENERAL HEALTH (agreed name, no recode) ----
-    # general_health (GENHLTH): 1 = excellent to 5 = poor. Reserved codes
-    # (7, 9) already dropped in 02_clean_append.R.
+    ageg6   = age_6grp,
+    hh_inc  = income_8cat,
     health5 = general_health
   )
- 
-cat("Recodes applied.\n\n")
+
+cat("Names applied.\n\n")
+
  
  
 # --- (b) Make the time column text ---------------------------------------------
@@ -155,8 +103,8 @@ cat_dummies <- X[, -1, drop = FALSE]
  
 brfss <- cbind(brfss, cat_dummies)
  
-# From here on, the covariates are female, the 18 dummy columns and minority:
-# 20 in total.  **revise** make sure this is true??
+# There are now 20 covariates: 5 age dummies, 2 education dummies, 
+# 7 dummies for income and 4 for health, plus female and minority.
 undid_covariates <- c("female", colnames(cat_dummies), "minority")
  
 cat("Covariates now used:\n")
@@ -237,7 +185,9 @@ cat("\n")
 
 # --- Keep the columns undidR needs and save ------------------------------------
 # state and finalwt (the BRFSS sampling weight) are kept, but undid_stage_two()
-# doesn't use sampling weights, so they are not used in stage two. **explain the diff thing here?? vs other weight??**
+# doesn't use sampling weights, so they are not used in stage two. The weights = diff 
+# setting in Central's file is not this survey weight. It only controls how undidR combines 
+# estimates across comparisons
 undid_input <- brfss %>%
   select(year, silo_name, marijuana_days_clean, state, finalwt, all_of(undid_covariates))
 undid_path <- file.path(clean_dir, "brfss_undid_input.rds")

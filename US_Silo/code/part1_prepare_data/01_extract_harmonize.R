@@ -11,7 +11,7 @@
 #   Download links are in README.md.
 #
 # HOW TO RUN
-#   Not run on its own. main.R runs it after 00_config.R.
+#   Not run on its own.  part1_run_all.R runs it after 00_config.R.
 #
 # INPUT/OUTPUT
 #   Input:  data/raw/LLCP{year}.XPT (one per year)
