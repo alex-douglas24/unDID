@@ -100,7 +100,7 @@ years <- 2016:2022
 #   values(config) = standardized column names used in the analysis dataset
 # Example: setNames("marijuana_days", "MARIJANA") will find the column called MARIJANA  and rename it to marijuana_days.
 #   "MARIJANA" = "marijuana_days"
-# Variables that do not exist in a given year are handled after: the "available" check in 01_extract_harmonize.R
+# Variables that do not exist in a given year are handled after: the "available" check in 01_extract_rename.R
 # skips them, and bind_rows() in 02_clean_append.R fills them with NA.
 # Variable name changes across the BRFSS 2016-2022:
 #   Cannabis:       MARIJANA (2016-17) -> MARIJAN1 (2018-22)

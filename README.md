@@ -176,7 +176,7 @@ In the order they run. `run_all` scripts check the packages and the project fold
 |---|---|---|
 | `part1_run_all.R` | Runs Part 1 | Writes the log `part1_run_all.Rout` |
 | `00_config.R` | Sets the folder paths, the six states and the study years. Defines `find_xpt()` (finds each year's raw file) and the table of BRFSS variable names by year | Creates `data/raw/` and `data/clean/` if missing |
-| `01_extract_harmonize.R` | Reads each raw file, keeps the six states, and keeps and renames the variables | Reads `data/raw/LLCP{year}.XPT`. Writes `data/clean/brfss_clean_{year}.rds` |
+| `01_extract_rename.R` | Reads each raw file, keeps the six states, and keeps and renames the variables | Reads `data/raw/LLCP{year}.XPT`. Writes `data/clean/brfss_clean_{year}.rds` |
 | `02_clean_append.R` | Stacks the seven years, keeps respondents asked the cannabis questions, sets non-response codes to missing, and creates the outcome and recoded variables | Reads `data/clean/brfss_clean_{year}.rds`. Writes `data/clean/brfss_analysis_2016_2022.rds` |
 | `part2_run_all.R` | Runs Part 2. Also checks that Part 1's data and Central's files are in place | Writes the log `part2_run_all.Rout` |
 | `01_data_cleaning.R` | Recodes to the agreed variables, converts `year` to text, adds the silo name, removes missing values, creates the dummy columns, and checks the data against Central's files | Reads `brfss_analysis_2016_2022.rds` and both `empty_diff_df.csv`. Writes `data/clean/brfss_undid_input.rds` |

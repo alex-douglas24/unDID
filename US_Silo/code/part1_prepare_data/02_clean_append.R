@@ -2,7 +2,7 @@
 # 02_clean_append.R: Clean the variables and stack the years
 #
 # WHAT IT DOES
-#   Loads the yearly .rds files made by 01_extract_harmonize.R and stacks them
+#   Loads the yearly .rds files made by 01_extract_rename.R and stacks them
 #   into one dataset. Keeps only the respondents who were asked the cannabis
 #   questions, sets "don't know" and "refused" codes to missing, creates the
 #   cannabis outcome (days of use in the past 30 days) and makes income
@@ -11,13 +11,13 @@
 #   data/clean/brfss_analysis_2016_2022.rds.
 #
 # BEFORE RUNNING
-#   01_extract_harmonize.R must have run, so that the yearly .rds files are in
+#   01_extract_rename.R must have run, so that the yearly .rds files are in
 #   data/clean/. part1_run_all.R also runs 00_config.R first, which this script
 #   needs.
 #
 # HOW TO RUN
 #   Not run on its own. part1_run_all.R runs it after 00_config.R and
-#   01_extract_harmonize.R.
+#   01_extract_rename.R.
 #
 # INPUT/OUTPUT
 #   Input:  data/clean/brfss_clean_{year}.rds (one per year)

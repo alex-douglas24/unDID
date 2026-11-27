@@ -1,5 +1,5 @@
 # =============================================================================
-# 01_extract_harmonize.R: Extract and harmonize BRFSS data
+# 01_extract_rename.R: Extract and rename BRFSS data
 #
 # WHAT IT DOES
 #   For each survey year: reads the LLCP .XPT file, filters to the 6 target states
@@ -22,7 +22,7 @@
 
 
 cat("============================================================\n")
-cat("STEP 1: EXTRACT AND HARMONIZE\n")
+cat("STEP 1: EXTRACT AND RENAME\n")
 cat("============================================================\n\n")
 
 for (yr in years) {
@@ -84,4 +84,4 @@ for (yr in years) {
   gc()
 }
 
-cat("Extract and harmonize complete.\n\n")
+cat("Extract and rename complete.\n\n")

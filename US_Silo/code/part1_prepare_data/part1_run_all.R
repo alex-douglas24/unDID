@@ -84,7 +84,7 @@ if (!file.exists(file.path(part1_dir, "00_config.R"))) {
 source(file.path(part1_dir, "00_config.R"), echo = TRUE)
 
 # 01: Read the raw .XPT files, keep the 6 target states, rename variables
-source(file.path(part1_dir, "01_extract_harmonize.R"), echo = TRUE)
+source(file.path(part1_dir, "01_extract_rename.R"), echo = TRUE)
 
 # 02: Clean non-response codes, create derived variables, stack all years
 source(file.path(part1_dir, "02_clean_append.R"), echo = TRUE)
