@@ -42,20 +42,40 @@ Central then combines the files from both silos to get the overall effect of leg
 
 
 ## UndidR: Variables across silos
- 
-The table shows the variable names and categories that each variable The silos agreed on one outcome and six covariates. This table shows what each measures in each survey. The last column says how the two surveys were treated, using the three groups from the manuscript (explained below the table).
- 
 
-| Agreed name | What it measures | Harmonization |
-|---|---|---|
-| `use30` (outcome) | Any cannabis use in the past 30 days (1 = yes, 0 = no) | Exactly Harmonized - ? |
-| `female` | Sex (0 = male, 1 = female) | Exactly Harmonized |
-| `ageg6` | Age group, 6 categories | Recoded to match |
-| `hh_inc` | Household income, 8 categories (8 = $75,000 or more) | Recoded to match |
-| `health5` | Self-rated general health, 1 (excellent) to 5 (poor) | Exactly Harmonized |
-| `educ` | Highest education completed | Recoded to match |
-| `minority` | Minority status | Not harmonized |
- 
+This table shows the result of harmonization: the name each variable has in both silos, the categories it takes, and the dummy columns needed. Central sets the covariate names when it sends the empty file (`empty_diff_df.csv`), so every silo must use these exact names (** ask about outcome variable Kwasi). Variables with more than two categories are turned into dummy variables, with one dummy column for each category except the reference category, which is why ageg6 appears as ageg62 to ageg66. Variables that are already 0/1 need no dummy columns.
+
+| Variable | Harmonized name | Harmonized categories | Dummy columns in Central's file |
+|---|---|---|---|
+| Cannabis use | `marijuana_days_clean` | Days of use in a 30-day period (0 to 30) | None |
+| Race | `minority` | 0 = not a visible minority, 1 = visible minority | None, already binary |
+| Gender | `female` | 0 = male, 1 = female | None, already binary |
+| Age | `ageg6` | 1 = 18-24, 2 = 25-34, 3 = 35-44, 4 = 45-54, 5 = 55-64, 6 = 65+ | `ageg62` to `ageg66` |
+| General health | `health5` | 1 = excellent, 2 = very good, 3 = good, 4 = fair, 5 = poor | `health52` to `health55` |
+| Education | `educ` | 1 = less than secondary, 2 = secondary graduate, 3 = any post-secondary | `educ2`, `educ3` |
+| Household income | `hh_inc` | 1 = under $10,000, 2 = under $15,000, 3 = under $20,000, 4 = under $25,000, 5 = under $35,000, 6 = under $50,000, 7 = under $75,000, 8 = $75,000 or more | `hh_inc2` to `hh_inc8` |
+
+
+
+The table below describes how each variable is measured in the CCHS and BRFSS. It describes the fully harmonized case where all variables are  recoded wherever the two surveys use different categories. "Don't know", refused and not-asked responses are set to missing in both surveys. The last column gives the harmonization decision for each variable.
+
+Each harmonization decision is documented in the script for each silo. For example, in the US silo, `03_harmonize.R` contains the recodes for `minority`, `female` and `educ`, because these are the variables that need to change in the US silo. In the Canadian silo under the CAN_silo folder the recodes for  `cannabis use`**kwasi name confirm, `minority`, `ageg6` and `hh_inc` can be found in the same script `03_harmonize.R` 
+
+
+| Variable | CCHS | BRFSS | Harmonization decision |
+|---|---|---|---|
+| Cannabis use (`marijuana_days_clean`) | Frequency of use in the past 12 months, in five categories (less than once a month to daily or almost daily), converted to approximate days of use in a 30-day period (see the dependent variable section) | Number of days of use in the past 30 days (0 to 30) | CCHS recoded to approximately match the BRFSS 30-day measure. See the dependent variable section for the full explanation |
+| Minority (`minority`) | Binary visible minority variable, as defined by the Employment Equity Act ("persons, other than Aboriginal peoples, who are non-Caucasian in race or non-white in colour", [Statistics Canada](https://www23.statcan.gc.ca/imdb/p2SV.pl?Function=assembleDESurv&DECId=1323413&RepClass=591&Id=1383236&DFId=180541)):<br>1 = visible minority<br>2 = not a visible minority | Computed binary race/ethnicity variable:<br>1 = non-Hispanic white<br>2 = non-white or Hispanic | Both surveys recoded to 0 = not a minority, 1 = minority |
+| Female (`female`) | Binary sex at birth variable:<br>0 = male<br>1 = female | Respondents are asked whether they are male or female:<br>1 = male<br>2 = female | BRFSS recoded to 0 = male, 1 = female to match the CCHS |
+| Age (`ageg6`) | Continuous age | Imputed age group:<br>1 = 18-24<br>2 = 25-34<br>3 = 35-44<br>4 = 45-54<br>5 = 55-64<br>6 = 65 or older | CCHS recoded to the BRFSS age groups |
+| General health (`health5`) | General health on a 5-point scale:<br>1 = excellent<br>2 = very good<br>3 = good<br>4 = fair<br>5 = poor | General health on a 5-point scale:<br>1 = excellent<br>2 = very good<br>3 = good<br>4 = fair<br>5 = poor | No recode needed |
+| Education (`educ`) | Highest level of education:<br>1 = less than secondary<br>2 = secondary graduate<br>3 = post-secondary certificate, diploma or university degree | Highest grade or year of school completed:<br>1 = never attended school or kindergarten only<br>2 = grades 1-8 (elementary)<br>3 = grades 9-11 (some high school)<br>4 = grade 12 or GED (high school graduate)<br>5 = college 1-3 years (some college or technical school)<br>6 = college 4 years or more (college graduate) | BRFSS recoded to the three CCHS categories |
+| Household income (`hh_inc`) | Continuous income | 1 = under $10,000<br>2 = under $15,000<br>3 = under $20,000<br>4 = under $25,000<br>5 = under $35,000<br>6 = under $50,000<br>7 = under $75,000<br>8 = $75,000 or more<br>*In 2021 and 2022 the categories were expanded (9 = under $150,000, 10 = under $200,000, 11 = $200,000 or more), and these were combined into category 8.* | CCHS recoded to the BRFSS 8 categories |
+
+
+
+
+
 **Harmonized.** The two surveys measure the same construct, and the variable is recoded so the categories match. For example, `hh_inc` is harmonized across silos. BRFSS income comes in eight categories, from less than $10,000 to $75,000 or more. The CCHS records a dollar amount, which can be recoded into matching categories. Though the cross country exchange rate is abstracted as income is measuring the same construct in both surveys. 
 <br>
 
