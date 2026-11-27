@@ -49,7 +49,7 @@ This table shows the result of harmonization: the name each variable has in both
 |---|---|---|---|
 | Cannabis use | `marijuana_days_clean` | Days of use in a 30-day period (0 to 30) | None |
 | Race | `minority` | 0 = not a visible minority, 1 = visible minority | None, already binary |
-| Gender | `female` | 0 = male, 1 = female | None, already binary |
+| Sex | `female` | 0 = male, 1 = female | None, already binary |
 | Age | `ageg6` | 1 = 18-24, 2 = 25-34, 3 = 35-44, 4 = 45-54, 5 = 55-64, 6 = 65+ | `ageg62` to `ageg66` |
 | General health | `health5` | 1 = excellent, 2 = very good, 3 = good, 4 = fair, 5 = poor | `health52` to `health55` |
 | Education | `educ` | 1 = less than secondary, 2 = secondary graduate, 3 = any post-secondary | `educ2`, `educ3` |
